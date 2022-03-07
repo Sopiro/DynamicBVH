@@ -1,4 +1,4 @@
-import { union } from "./aabb.js";
+import { checkCollideAABB, checkPointInside, union } from "./aabb.js";
 export class AABBTree {
     constructor() {
         this.root = undefined;
@@ -88,6 +88,7 @@ export class AABBTree {
             }
             else {
                 this.root = sibling;
+                sibling.parent = undefined;
             }
             let ancestor = sibling.parent;
             while (ancestor != undefined) {
@@ -98,7 +99,43 @@ export class AABBTree {
             }
         }
         else {
-            this.root = undefined;
+            if (this.root == node) {
+                this.root = undefined;
+            }
         }
+    }
+    queryPoint(point) {
+        let res = [];
+        let q = [this.root];
+        while (q.length != 0) {
+            let current = q.shift();
+            if (!checkPointInside(current.aabb, point))
+                continue;
+            if (current.isLeaf) {
+                res.push(current);
+            }
+            else {
+                q.push(current.child1);
+                q.push(current.child2);
+            }
+        }
+        return res;
+    }
+    queryRegion(region) {
+        let res = [];
+        let q = [this.root];
+        while (q.length != 0) {
+            let current = q.shift();
+            if (!checkCollideAABB(current.aabb, region))
+                continue;
+            if (current.isLeaf) {
+                res.push(current);
+            }
+            else {
+                q.push(current.child1);
+                q.push(current.child2);
+            }
+        }
+        return res;
     }
 }

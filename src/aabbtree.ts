@@ -1,4 +1,5 @@
-import { AABB, union } from "./aabb.js";
+import { AABB, checkCollideAABB, checkPointInside, union } from "./aabb.js";
+import { Vector2 } from "./math.js";
 
 export interface Node
 {
@@ -111,7 +112,7 @@ export class AABBTree
         return newNode;
     }
 
-    remove(node: Node)
+    remove(node: Node): void
     {
         let parent = node.parent;
 
@@ -134,6 +135,7 @@ export class AABBTree
             else
             {
                 this.root = sibling;
+                sibling.parent = undefined;
             }
 
             let ancestor = sibling.parent;
@@ -148,7 +150,64 @@ export class AABBTree
 
         } else
         {
-            this.root = undefined;
+            if (this.root == node)
+            {
+                this.root = undefined;
+            }
         }
+    }
+
+    queryPoint(point: Vector2): Node[]
+    {
+        let res: Node[] = [];
+
+        let q = [this.root!];
+
+        while (q.length != 0)
+        {
+            let current = q.shift()!;
+
+            if (!checkPointInside(current.aabb, point))
+                continue;
+
+            if (current.isLeaf)
+            {
+                res.push(current);
+            }
+            else
+            {
+                q.push(current.child1!);
+                q.push(current.child2!);
+            }
+        }
+
+        return res;
+    }
+
+    queryRegion(region: AABB): Node[]
+    {
+        let res: Node[] = [];
+
+        let q = [this.root!];
+
+        while (q.length != 0)
+        {
+            let current = q.shift()!;
+
+            if (!checkCollideAABB(current.aabb, region))
+                continue;
+
+            if (current.isLeaf)
+            {
+                res.push(current);
+            }
+            else
+            {
+                q.push(current.child1!);
+                q.push(current.child2!);
+            }
+        }
+
+        return res;
     }
 }

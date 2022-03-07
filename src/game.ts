@@ -4,7 +4,7 @@ import * as Util from "./util.js";
 import { Renderer } from "./renderer.js";
 import { Camera } from "./camera.js";
 import { Settings } from "./settings.js";
-import { AABB, union } from "./aabb.js";
+import { AABB, newAABB, uniqueColor } from "./aabb.js";
 import { PRNG } from "./prng.js";
 import { AABBTree } from "./aabbtree.js";
 
@@ -22,7 +22,12 @@ export class Game
     public time: number = 0.0;
     public frame: number = 0;
 
-    public tree: AABBTree;
+    private tree: AABBTree;
+
+    private creating: boolean = false;
+    private removing: boolean = false;
+    private clickStart: Vector2 = new Vector2(0, 0);
+    private clickEnd: Vector2 = new Vector2(0, 0);
 
     constructor(renderer: Renderer)
     {
@@ -40,13 +45,28 @@ export class Game
 
         this.tree = new AABBTree();
 
-        let a = this.tree.add(new AABB(new Vector2(), new Vector2(1, 1)));
-        let b = this.tree.add(new AABB(new Vector2(1, 1), new Vector2(2, 2)));
-        this.tree.add(new AABB(new Vector2(-1, -1), new Vector2(0, 0)));
-        this.tree.add(new AABB(new Vector2(-3, -1.3), new Vector2(-2, 2)));
+        this.init();
+    }
 
-        this.tree.remove(a);
-        this.tree.remove(b);
+    init(): void
+    {
+        this.tree.root = undefined;
+
+        let rand = new PRNG(Math.random());
+
+        let mw = 0.7;
+        let mh = 0.7;
+
+        // Random initial spread
+        for (let i = 0; i < 20; i++)
+        {
+            let rx = rand.nextRange(-Settings.clipWidth / 2.0, Settings.clipWidth / 2.0 - mw);
+            let ry = rand.nextRange(-Settings.clipHeight / 2.0, Settings.clipHeight / 2.0 - mh);
+            let rw = rand.nextRange(0.2, mw);
+            let rh = rand.nextRange(0.2, mh);
+
+            this.tree.add(newAABB(rx, ry, rw, rh));
+        }
     }
 
     update(delta: number): void
@@ -98,6 +118,81 @@ export class Game
             dist.y *= -(Settings.clipHeight / Settings.height) * this.camera.scale.y;
             this.camera.position = this.cameraPosStart.add(dist);
         }
+
+        if (Input.isKeyPressed("r"))
+        {
+            this.init();
+        }
+
+        if (Input.isMousePressed(0))
+        {
+            if (!this.creating && !this.removing)
+            {
+                this.clickStart = this.renderer.pick(Input.mousePosition);
+                this.creating = true;
+            }
+        }
+
+        if (Input.isMousePressed(1))
+        {
+            if (!this.creating && !this.removing)
+            {
+                this.clickStart = this.renderer.pick(Input.mousePosition);
+                this.removing = true;
+            }
+        }
+
+        if (Input.isMouseDown(0))
+        {
+            if (this.creating)
+            {
+                this.clickEnd = this.renderer.pick(Input.mousePosition);
+            }
+        }
+
+        if (Input.isMouseDown(1))
+        {
+            if (this.removing)
+            {
+                this.clickEnd = this.renderer.pick(Input.mousePosition);
+            }
+        }
+
+        if (Input.isMouseReleased(0))
+        {
+            if (this.creating)
+            {
+                this.tree.add(new AABB(this.clickStart, this.clickEnd));
+
+                this.creating = false;
+            }
+        }
+
+        if (Input.isMouseReleased(1))
+        {
+            if (this.removing)
+            {
+                let res = this.tree.queryRegion(new AABB(this.clickStart, this.clickEnd));
+
+                for (let n of res)
+                {
+                    this.tree.remove(n);
+                }
+
+                this.removing = false;
+            }
+        }
+
+        if (Input.isMousePressed(2))
+        {
+            let mp = this.renderer.pick(Input.mousePosition);
+            let res = this.tree.queryPoint(mp);
+
+            for (let n of res)
+            {
+                this.tree.remove(n);
+            }
+        }
     }
 
     render(r: Renderer): void
@@ -105,15 +200,20 @@ export class Game
         r.setCameraTransform(this.camera.cameraTransform);
         r.setModelTransform(new Matrix3());
 
-        let rand = new PRNG(123);
+        if (this.creating || this.removing)
+        {
+            r.drawAABB(new AABB(this.clickStart.copy(), this.clickEnd.copy()), undefined);
+        }
 
-        let q = [this.tree.root!];
+        let q = [this.tree.root];
 
         while (q.length != 0)
         {
             let current = q.shift()!;
 
-            r.drawAABB(current!.aabb, current.isLeaf ? rand.nextColor() : undefined);
+            if (current == undefined) break;
+
+            r.drawAABB(current!.aabb, current.isLeaf ? uniqueColor(current!.aabb) : undefined);
             if (!current.isLeaf)
             {
                 q.push(current.child1!);

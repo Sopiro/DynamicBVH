@@ -1,4 +1,5 @@
 import { Vector2 } from "./math.js";
+import { PRNG } from "./prng.js";
 
 export class AABB
 {
@@ -47,4 +48,28 @@ export function union(b1: AABB, b2: AABB): AABB
     let res = new AABB(new Vector2(minX, minY), new Vector2(maxX, maxY));
 
     return res;
+}
+
+export function checkPointInside(aabb: AABB, point: Vector2): boolean
+{
+    if (aabb.min.x > point.x || aabb.max.x < point.x) return false;
+    if (aabb.min.y > point.y || aabb.max.y < point.y) return false;
+
+    return true;
+}
+
+export function checkCollideAABB(a: AABB, b: AABB): boolean
+{
+    if (a.min.x > b.max.x || a.max.x < b.min.x) return false;
+    if (a.min.y > b.max.y || a.max.y < b.min.y) return false;
+
+    return true;
+}
+
+const rand = new PRNG(1234);
+
+export function uniqueColor(aabb: AABB): string
+{
+    rand.setSeed((aabb.min.x << 16) + (aabb.min.y << 8) + (aabb.max.x << 4) + aabb.max.y);
+    return rand.nextColor();
 }

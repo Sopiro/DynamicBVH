@@ -6,7 +6,7 @@ export class PRNG
     private a: number;
     private c: number;
 
-    private state: number;
+    private state!: number;
 
     constructor(seed: number)
     {
@@ -14,6 +14,11 @@ export class PRNG
         this.a = 1103515245;
         this.c = 12345;
 
+        this.setSeed(seed);
+    }
+
+    setSeed(seed: number)
+    {
         this.state = (seed != undefined) ? seed : Math.floor(Math.random() * (this.m - 1));
     }
 
