@@ -72,7 +72,7 @@ export class Game
 
             this.tree.add(newAABB(rx, ry, rw, rh));
 
-            if (count >= 12) clearInterval(routine);
+            if (count >= 15) clearInterval(routine);
         }, 50);
 
         this.initRoutines.push(routine);
@@ -232,5 +232,9 @@ export class Game
                 q.push(current.child2!);
             }
         }
+
+        let cp = this.tree.getCollisionPairs();
+
+        r.log("Collision pairs: " + cp.length);
     }
 }

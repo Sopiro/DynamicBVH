@@ -157,5 +157,6 @@ export class Renderer
             this.gfx.fill();
 
         this.gfx.stroke();
+        this.gfx.fillStyle = "#000000";
     }
 }

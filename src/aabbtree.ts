@@ -1,13 +1,16 @@
 import { AABB, checkCollideAABB, checkPointInside, union } from "./aabb.js";
 import { Vector2 } from "./math.js";
+import { make_pair_natural, Pair } from "./util.js";
 
+let nodeID = 0;
 export interface Node
 {
-    parent?: Node,
-    child1?: Node,
-    child2?: Node,
-    isLeaf: boolean,
-    aabb: AABB,
+    id: number;
+    parent?: Node;
+    child1?: Node;
+    child2?: Node;
+    isLeaf: boolean;
+    aabb: AABB;
 }
 
 export class AABBTree
@@ -18,6 +21,7 @@ export class AABBTree
     {
         let newNode: Node =
         {
+            id: nodeID++,
             aabb: aabb,
             isLeaf: true,
         }
@@ -69,6 +73,7 @@ export class AABBTree
             let oldParent: Node = bestSibling.parent!;
             let newParent: Node =
             {
+                id: nodeID++,
                 parent: oldParent,
                 aabb: union(aabb, bestSibling.aabb),
                 isLeaf: false
@@ -161,7 +166,9 @@ export class AABBTree
     {
         let res: Node[] = [];
 
-        let q = [this.root!];
+        if (this.root == undefined) return res;
+
+        let q = [this.root];
 
         while (q.length != 0)
         {
@@ -188,7 +195,9 @@ export class AABBTree
     {
         let res: Node[] = [];
 
-        let q = [this.root!];
+        if (this.root == undefined) return res;
+
+        let q = [this.root];
 
         while (q.length != 0)
         {
@@ -209,5 +218,69 @@ export class AABBTree
         }
 
         return res;
+    }
+
+    getCollisionPairs(): Pair<Node, Node>[]
+    {
+        if (this.root == undefined) return [];
+
+        let res: Pair<Node, Node>[] = [];
+        let checked: Set<number> = new Set<number>();
+
+        if (!this.root.isLeaf)
+        {
+            this.checkCollision(this.root.child1!, this.root.child2!, res, checked);
+        }
+
+        return res;
+    }
+
+    private checkCollision(a: Node, b: Node, pairs: Pair<Node, Node>[], checked: Set<number>): void
+    {
+        const key = make_pair_natural(a.id, b.id);
+        if (checked.has(key)) return;
+
+        checked.add(key);
+
+        if (a.isLeaf && b.isLeaf)
+        {
+            if (checkCollideAABB(a.aabb, b.aabb))
+            {
+                pairs.push({ p1: a, p2: b });
+            }
+        }
+        else if (!a.isLeaf && !b.isLeaf)
+        {
+            this.checkCollision(a.child1!, a.child2!, pairs, checked);
+            this.checkCollision(b.child1!, b.child2!, pairs, checked);
+
+            if (checkCollideAABB(a.aabb, b.aabb))
+            {
+                this.checkCollision(a.child1!, b.child1!, pairs, checked);
+                this.checkCollision(a.child1!, b.child2!, pairs, checked);
+                this.checkCollision(a.child2!, b.child1!, pairs, checked);
+                this.checkCollision(a.child2!, b.child2!, pairs, checked);
+            }
+        }
+        else if (a.isLeaf && !b.isLeaf)
+        {
+            this.checkCollision(b.child1!, b.child2!, pairs, checked);
+
+            if (checkCollideAABB(a.aabb, b.aabb))
+            {
+                this.checkCollision(a, b.child1!, pairs, checked);
+                this.checkCollision(a, b.child2!, pairs, checked);
+            }
+        }
+        else if (!a.isLeaf && b.isLeaf)
+        {
+            this.checkCollision(a.child1!, a.child2!, pairs, checked);
+
+            if (checkCollideAABB(a.aabb, b.aabb))
+            {
+                this.checkCollision(b, a.child1!, pairs, checked);
+                this.checkCollision(b, a.child2!, pairs, checked);
+            }
+        }
     }
 }

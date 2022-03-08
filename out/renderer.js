@@ -101,5 +101,6 @@ export class Renderer {
         if (fillStyle != undefined)
             this.gfx.fill();
         this.gfx.stroke();
+        this.gfx.fillStyle = "#000000";
     }
 }

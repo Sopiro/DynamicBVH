@@ -43,7 +43,7 @@ export class Game {
             let rw = rand.nextRange(0.2, mw);
             let rh = rand.nextRange(0.2, mh);
             this.tree.add(newAABB(rx, ry, rw, rh));
-            if (count >= 12)
+            if (count >= 15)
                 clearInterval(routine);
         }, 50);
         this.initRoutines.push(routine);
@@ -150,5 +150,7 @@ export class Game {
                 q.push(current.child2);
             }
         }
+        let cp = this.tree.getCollisionPairs();
+        r.log("Collision pairs: " + cp.length);
     }
 }
