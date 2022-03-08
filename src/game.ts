@@ -24,6 +24,7 @@ export class Game
 
     private tree: AABBTree;
 
+    private initRoutines: NodeJS.Timer[] = [];
     private creating: boolean = false;
     private removing: boolean = false;
     private clickStart: Vector2 = new Vector2(0, 0);
@@ -52,21 +53,29 @@ export class Game
     {
         this.tree.root = undefined;
 
-        let rand = new PRNG(Math.random());
-
-        let mw = 0.7;
-        let mh = 0.7;
+        for (let r of this.initRoutines)
+            clearInterval(r);
 
         // Random initial spread
-        for (let i = 0; i < 20; i++)
+        let rand = new PRNG(Math.random());
+
+        let mw = 0.9;
+        let mh = 0.9;
+        let count = 0;
+        let routine = setInterval(() =>
         {
+            count++;
             let rx = rand.nextRange(-Settings.clipWidth / 2.0, Settings.clipWidth / 2.0 - mw);
             let ry = rand.nextRange(-Settings.clipHeight / 2.0, Settings.clipHeight / 2.0 - mh);
             let rw = rand.nextRange(0.2, mw);
             let rh = rand.nextRange(0.2, mh);
 
             this.tree.add(newAABB(rx, ry, rw, rh));
-        }
+
+            if (count >= 12) clearInterval(routine);
+        }, 50);
+
+        this.initRoutines.push(routine);
     }
 
     update(delta: number): void
@@ -162,7 +171,10 @@ export class Game
         {
             if (this.creating)
             {
-                this.tree.add(new AABB(this.clickStart, this.clickEnd));
+                if (this.clickEnd.sub(this.clickStart).length > 0.000001)
+                {
+                    this.tree.add(new AABB(this.clickStart, this.clickEnd));
+                }
 
                 this.creating = false;
             }
