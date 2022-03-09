@@ -222,6 +222,8 @@ export class AABBTree
 
     getCollisionPairs(): Pair<Node, Node>[]
     {
+        debugCount = 0;
+        
         if (this.root == undefined) return [];
 
         let res: Pair<Node, Node>[] = [];
@@ -241,6 +243,8 @@ export class AABBTree
         if (checked.has(key)) return;
 
         checked.add(key);
+
+        debugCount++;
 
         if (a.isLeaf && b.isLeaf)
         {
@@ -284,3 +288,5 @@ export class AABBTree
         }
     }
 }
+
+export let debugCount = 0;

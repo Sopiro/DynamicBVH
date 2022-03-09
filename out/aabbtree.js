@@ -147,6 +147,7 @@ export class AABBTree {
         return res;
     }
     getCollisionPairs() {
+        debugCount = 0;
         if (this.root == undefined)
             return [];
         let res = [];
@@ -161,6 +162,7 @@ export class AABBTree {
         if (checked.has(key))
             return;
         checked.add(key);
+        debugCount++;
         if (a.isLeaf && b.isLeaf) {
             if (checkCollideAABB(a.aabb, b.aabb)) {
                 pairs.push({ p1: a, p2: b });
@@ -192,3 +194,4 @@ export class AABBTree {
         }
     }
 }
+export let debugCount = 0;
