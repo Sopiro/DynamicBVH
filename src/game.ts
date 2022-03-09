@@ -30,6 +30,8 @@ export class Game
     private clickStart: Vector2 = new Vector2(0, 0);
     private clickEnd: Vector2 = new Vector2(0, 0);
 
+    private collsionPairsLabel: HTMLDivElement;
+
     constructor(renderer: Renderer)
     {
         this.renderer = renderer;
@@ -45,6 +47,14 @@ export class Game
         this.renderer.init(viewportTransform, projectionTransform, this.camera.cameraTransform);
 
         this.tree = new AABBTree();
+
+        const restartBtn = document.querySelector("#restart") as HTMLButtonElement;
+        restartBtn.addEventListener("click", () =>
+        {
+            this.init();
+        });
+
+        this.collsionPairsLabel = document.querySelector("#collsionPairsLabel") as HTMLDivElement;
 
         this.init();
     }
@@ -64,16 +74,19 @@ export class Game
         let count = 0;
         let routine = setInterval(() =>
         {
+            let bottomLeft = this.renderer.pick(new Vector2(0, 0));
+            let topRight = this.renderer.pick(new Vector2(Settings.width, Settings.height));
+
             count++;
-            let rx = rand.nextRange(-Settings.clipWidth / 2.0, Settings.clipWidth / 2.0 - mw);
-            let ry = rand.nextRange(-Settings.clipHeight / 2.0, Settings.clipHeight / 2.0 - mh);
+            let rx = rand.nextRange(bottomLeft.x, topRight.x - mw);
+            let ry = rand.nextRange(bottomLeft.y, topRight.y - mh);
             let rw = rand.nextRange(0.2, mw);
             let rh = rand.nextRange(0.2, mh);
 
             this.tree.add(newAABB(rx, ry, rw, rh));
 
-            if (count >= 15) clearInterval(routine);
-        }, 50);
+            if (count >= Settings.boxCount) clearInterval(routine);
+        }, Settings.genSpeed);
 
         this.initRoutines.push(routine);
     }
@@ -84,6 +97,10 @@ export class Game
         this.frame++;
         this.time += delta;
         this.handleInput(delta);
+
+        let collisionPairs = this.tree.getCollisionPairs();
+
+        this.collsionPairsLabel.innerHTML = "Collision Pairs: " + collisionPairs.length;
     }
 
     private handleInput(delta: number)
@@ -232,9 +249,5 @@ export class Game
                 q.push(current.child2!);
             }
         }
-
-        let cp = this.tree.getCollisionPairs();
-
-        r.log("Collision pairs: " + cp.length);
     }
 }

@@ -25,6 +25,11 @@ export class Game {
         let viewportTransform = Util.viewport(Settings.width, Settings.height);
         this.renderer.init(viewportTransform, projectionTransform, this.camera.cameraTransform);
         this.tree = new AABBTree();
+        const restartBtn = document.querySelector("#restart");
+        restartBtn.addEventListener("click", () => {
+            this.init();
+        });
+        this.collsionPairsLabel = document.querySelector("#collsionPairsLabel");
         this.init();
     }
     init() {
@@ -37,15 +42,17 @@ export class Game {
         let mh = 0.9;
         let count = 0;
         let routine = setInterval(() => {
+            let bottomLeft = this.renderer.pick(new Vector2(0, 0));
+            let topRight = this.renderer.pick(new Vector2(Settings.width, Settings.height));
             count++;
-            let rx = rand.nextRange(-Settings.clipWidth / 2.0, Settings.clipWidth / 2.0 - mw);
-            let ry = rand.nextRange(-Settings.clipHeight / 2.0, Settings.clipHeight / 2.0 - mh);
+            let rx = rand.nextRange(bottomLeft.x, topRight.x - mw);
+            let ry = rand.nextRange(bottomLeft.y, topRight.y - mh);
             let rw = rand.nextRange(0.2, mw);
             let rh = rand.nextRange(0.2, mh);
             this.tree.add(newAABB(rx, ry, rw, rh));
-            if (count >= 15)
+            if (count >= Settings.boxCount)
                 clearInterval(routine);
-        }, 50);
+        }, Settings.genSpeed);
         this.initRoutines.push(routine);
     }
     update(delta) {
@@ -53,6 +60,8 @@ export class Game {
         this.frame++;
         this.time += delta;
         this.handleInput(delta);
+        let collisionPairs = this.tree.getCollisionPairs();
+        this.collsionPairsLabel.innerHTML = "Collision Pairs: " + collisionPairs.length;
     }
     handleInput(delta) {
         const mx = Input.isKeyDown("ArrowLeft") ? -1 : Input.isKeyDown("ArrowRight") ? 1 : 0;
@@ -150,7 +159,5 @@ export class Game {
                 q.push(current.child2);
             }
         }
-        let cp = this.tree.getCollisionPairs();
-        r.log("Collision pairs: " + cp.length);
     }
 }

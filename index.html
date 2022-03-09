@@ -19,16 +19,73 @@
 </head>
 
 <body>
-    <div class="container">
+    <div class="container-fluid" style="max-width: 1700px;">
         <div class="row">
-            <div class="col-10 title fs-1">Dynamic Bounding Volume Hierarchies</div>
-            <div class="col frame_counter align-self-end fs-5 text-end m-0" style="padding-right: 30px;">0fps</div>
+            <div class="col p-0" style="margin-left:1rem;">
+                <div class="row">
+                    <div class="col-10 title fs-1">Dynamic Bounding Volume Hierarchies</div>
+                    <div class="col align-self-end frame_counter fs-5 text-end">0fps</div>
+                </div>
+                <canvas id="canvas" style="border: 2px solid black; width: 1280px; height: 720px;"></canvas>
+            </div>
+
+            <div class="col fw-normal" style="margin: 4rem 1rem 1rem 1rem">
+                <div class="row mb-2">
+                    <button type="button" class="btn btn-primary " data-bs-toggle="modal" data-bs-target="#exampleModal">
+                        How to use
+                    </button>
+                </div>
+
+                <!-- Shorcut modal -->
+                <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="exampleModalLabel">How to use</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body ms-2">
+                                <div class="row">
+                                    - Left click drag to create box
+                                </div>
+                                <div class="row">
+                                    - Right click or wheel drag to remove box
+                                </div>
+                                <div class="row">
+                                    - R to restart
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-2">
+                    <button class="btn btn-primary" type="button" id="restart">
+                        Restart
+                    </button>
+                </div>
+
+                <div class="row">
+                    <label for="boxCount" class="form-label col-9 p-0 m-0">Box count</label>
+                    <div class="col text-end p-0 m-0" id="boxCount_label">0</div>
+                    <input type="range" class="form-range " id="boxCount">
+                </div>
+
+                <div class="row">
+                    <label for="genSpeed" class="form-label col-9 p-0 m-0">Generation speed</label>
+                    <div class="col text-end p-0 m-0" id="genSpeed_label">0ms</div>
+                    <input type="range" class="form-range " id="genSpeed">
+                </div>
+
+                <div class="row fs-3" id="collsionPairsLabel">
+                    Collision Pairs: 0
+                </div>
+
+            </div>
         </div>
-        <canvas id="canvas" style="border: 2px solid black; width: 1280px; height: 720px;"></canvas>
-        <div class="fs-5">- Left click drag to create box</div>
-        <div class="fs-5" style="margin-top: -8px;">- Right click or wheel drag to remove box</div>
-        <div class="fs-5" style="margin-top: -8px;">- R to restart</div>
-        <div class="fs-5" style="margin-top: -8px;">- <a href="https://github.com/Sopiro/DynamicBVH" class="fs-5">Source code</a></div>
     </div>
 </body>
 
