@@ -1,3 +1,5 @@
-# TS Rendering Playground
-Rendering playground written in TypeScript  
-Live demo: https://sopiro.github.io/TS-Rendering-Playground/  
+# Dynamic Bounding Volume Hierarchies
+Dynamic BVH(Dynamic AABB tree) implemented in TypeScript.  
+This can be easily extended to 3D.  
+
+Live demo: https://sopiro.github.io/DynamicBVH/
