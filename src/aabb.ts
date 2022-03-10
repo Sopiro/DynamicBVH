@@ -11,26 +11,26 @@ export class AABB
         this.min = min;
         this.max = max;
 
-        this.ensure();
-    }
-
-    private ensure(): void
-    {
-        let minX = Math.min(this.min.x, this.max.x);
-        let maxX = Math.max(this.min.x, this.max.x);
-        let minY = Math.min(this.min.y, this.max.y);
-        let maxY = Math.max(this.min.y, this.max.y);
-
-        this.min.x = minX;
-        this.min.y = minY;
-        this.max.x = maxX;
-        this.max.y = maxY;
+        fix(this);
     }
 
     get area(): number
     {
         return (this.max.x - this.min.x) * (this.max.y - this.min.y);
     }
+}
+
+function fix(aabb: AABB): void
+{
+    let minX = Math.min(aabb.min.x, aabb.max.x);
+    let maxX = Math.max(aabb.min.x, aabb.max.x);
+    let minY = Math.min(aabb.min.y, aabb.max.y);
+    let maxY = Math.max(aabb.min.y, aabb.max.y);
+
+    aabb.min.x = minX;
+    aabb.min.y = minY;
+    aabb.max.x = maxX;
+    aabb.max.y = maxY;
 }
 
 export function newAABB(x: number, y: number, w: number, h: number): AABB
