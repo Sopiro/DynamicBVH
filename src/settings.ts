@@ -16,6 +16,7 @@ export enum MouseMode
 
 const boxCountRange: Util.Pair<number, number> = { p1: 1, p2: 1000 };
 const genSpeedRange: Util.Pair<number, number> = { p1: 1, p2: 1000 };
+const marginRange: Util.Pair<number, number> = { p1: 0.0, p2: 1.0 };
 
 // Settings
 export const Settings = {
@@ -25,7 +26,9 @@ export const Settings = {
     clipHeight: 7.2,
     paused: false,
     boxCount: 15,
-    genSpeed: 50
+    genSpeed: 50,
+    aabbMargin: 0.1,
+    colorizeBox: true,
 }
 
 // Remove the default pop-up context menu
@@ -62,6 +65,22 @@ genSpeed.addEventListener("input", () =>
     updateSetting("genSpeed", mappedValue);
 });
 
+const margin = document.querySelector("#margin")! as HTMLInputElement;
+margin.value = String(Util.map(Settings.aabbMargin, marginRange.p1, marginRange.p2, 0, 100));
+const marginLabel = document.querySelector("#margin_label")! as HTMLLabelElement;
+marginLabel.innerHTML = String(Settings.aabbMargin) + "cm";
+margin.addEventListener("input", () =>
+{
+    let mappedValue = Util.map(Number(margin.value), 0, 100, marginRange.p1, marginRange.p2);
+    marginLabel.innerHTML = String(mappedValue) + "cm";
+
+    updateSetting("margin", mappedValue);
+});
+
+const colorize = document.querySelector("#colorize")! as HTMLInputElement;
+colorize.checked = Settings.colorizeBox;
+colorize.addEventListener("click", () => { Settings.colorizeBox = colorize.checked; });
+
 export function updateSetting(id: string, content?: any)
 {
     switch (id)
@@ -74,6 +93,9 @@ export function updateSetting(id: string, content?: any)
             break;
         case "genSpeed":
             Settings.genSpeed = content!;
+            break;
+        case "margin":
+            Settings.aabbMargin = content!;
         default:
             break;
     }

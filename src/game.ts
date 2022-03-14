@@ -4,9 +4,10 @@ import * as Util from "./util.js";
 import { Renderer } from "./renderer.js";
 import { Camera } from "./camera.js";
 import { Settings } from "./settings.js";
-import { AABB, newAABB, uniqueColor } from "./aabb.js";
+import { AABB, detectCollisionAABB } from "./aabb.js";
 import { PRNG } from "./prng.js";
 import { AABBTree, debugCount } from "./aabbtree.js";
+import { Box, toAABB, toBox } from "./box.js";
 
 export class Game
 {
@@ -26,9 +27,13 @@ export class Game
 
     private initRoutines: NodeJS.Timer[] = [];
     private creating: boolean = false;
+    private grabbing: boolean = false;
     private removing: boolean = false;
     private clickStart: Vector2 = new Vector2(0, 0);
     private clickEnd: Vector2 = new Vector2(0, 0);
+
+    private grabbedBox!: Box;
+    private grabStart!: Vector2;
 
     private boxCount = 0;
 
@@ -65,7 +70,7 @@ export class Game
 
     init(): void
     {
-        this.tree.root = undefined;
+        this.tree.reset();
 
         for (let r of this.initRoutines)
             clearInterval(r);
@@ -87,7 +92,7 @@ export class Game
             let rw = rand.nextRange(0.2, mw);
             let rh = rand.nextRange(0.2, mh);
 
-            this.tree.add(newAABB(rx, ry, rw, rh));
+            this.tree.add(new Box(new Vector2(rx, ry), rw, rh));
 
             if (this.boxCount >= Settings.boxCount) clearInterval(routine);
         }, Settings.genSpeed);
@@ -102,9 +107,25 @@ export class Game
         this.time += delta;
         this.handleInput(delta);
 
+        this.tree.update();
+
+        // Broad phase
         let collisionPairs = this.tree.getCollisionPairs();
 
-        this.collsionPairsLabel.innerHTML = "Collision pairs: " + collisionPairs.length;
+        let realCollisionPairs: Util.Pair<Box, Box>[] = [];
+        for (let pair of collisionPairs)
+        {
+            let tightAABB1 = toAABB(pair.p1.item!);
+            let tightAABB2 = toAABB(pair.p2.item!);
+
+            // Narrow phase
+            if (detectCollisionAABB(tightAABB1, tightAABB2))
+            {
+                realCollisionPairs.push({ p1: pair.p1.item!, p2: pair.p2.item! });
+            }
+        }
+
+        this.collsionPairsLabel.innerHTML = "Collision pairs: " + realCollisionPairs.length;
 
         let nSquared = (this.boxCount * this.boxCount - this.boxCount) / 2.0;
         let bvh = nSquared / debugCount;
@@ -167,7 +188,19 @@ export class Game
             if (!this.creating && !this.removing)
             {
                 this.clickStart = this.renderer.pick(Input.mousePosition);
-                this.creating = true;
+
+                let queryResult = this.tree.queryPoint(this.clickStart);
+
+                if (queryResult.length == 0)
+                {
+                    this.creating = true;
+                }
+                else
+                {
+                    this.grabbedBox = queryResult[0].item!;
+                    this.grabStart = this.grabbedBox.position.copy();
+                    this.grabbing = true;
+                }
             }
         }
 
@@ -186,6 +219,14 @@ export class Game
             {
                 this.clickEnd = this.renderer.pick(Input.mousePosition);
             }
+            else if (this.grabbing)
+            {
+                this.clickEnd = this.renderer.pick(Input.mousePosition);
+
+                let delta = this.clickEnd.sub(this.clickStart);
+
+                this.grabbedBox.position = this.grabStart.add(delta);
+            }
         }
 
         if (Input.isMouseDown(1))
@@ -202,7 +243,9 @@ export class Game
             {
                 if (this.clickEnd.sub(this.clickStart).length > 0.000001)
                 {
-                    this.tree.add(new AABB(this.clickStart, this.clickEnd));
+                    let aabb = new AABB(this.clickStart, this.clickEnd);
+
+                    this.tree.add(toBox(aabb));
                     this.boxCount++;
                 }
 
@@ -245,25 +288,21 @@ export class Game
         r.setCameraTransform(this.camera.cameraTransform);
         r.setModelTransform(new Matrix3());
 
+        this.tree.traverse(node =>
+        {
+            if (node.isLeaf && Settings.colorizeBox)
+            {
+                let box = node.item!;
+                let aabb = toAABB(box);
+                r.drawAABB(aabb, box.color);
+            }
+
+            r.drawAABB(node.aabb, "#00000000", "#00000055");
+        });
+
         if (this.creating || this.removing)
         {
-            r.drawAABB(new AABB(this.clickStart.copy(), this.clickEnd.copy()), undefined);
-        }
-
-        let q = [this.tree.root];
-
-        while (q.length != 0)
-        {
-            let current = q.shift()!;
-
-            if (current == undefined) break;
-
-            r.drawAABB(current!.aabb, current.isLeaf ? uniqueColor(current!.aabb) : undefined);
-            if (!current.isLeaf)
-            {
-                q.push(current.child1!);
-                q.push(current.child2!);
-            }
+            r.drawAABB(new AABB(this.clickStart.copy(), this.clickEnd.copy()));
         }
     }
 }

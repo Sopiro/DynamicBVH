@@ -135,7 +135,7 @@ export class Renderer
         this.drawVector(p1, p2.sub(p1), arrowSize);
     }
 
-    drawAABB(aabb: AABB, fillStyle?: string): void
+    drawAABB(aabb: AABB, fillStyle: string = "#00000000", strokeStyle: string = "#000000"): void
     {
         let vpcm = this.vpc.mulMatrix(this.modelTransform);
 
@@ -143,9 +143,8 @@ export class Renderer
         let tv1 = vpcm.mulVector2(aabb.max, 1);
 
         this.gfx.lineWidth = 1;
-        this.gfx.strokeStyle = "#000000";
-        if (fillStyle != undefined)
-            this.gfx.fillStyle = fillStyle;
+        this.gfx.strokeStyle = strokeStyle;
+        this.gfx.fillStyle = fillStyle;
 
         this.gfx.beginPath();
         this.gfx.moveTo(tv0.x, Settings.height - tv0.y);

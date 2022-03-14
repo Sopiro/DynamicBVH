@@ -1,16 +1,43 @@
-import { checkCollideAABB, checkPointInside, union } from "./aabb.js";
+import { containsAABB, detectCollisionAABB, testPointInside, union } from "./aabb.js";
+import { toAABB } from "./box.js";
+import { Settings } from "./settings.js";
 import { make_pair_natural } from "./util.js";
-let nodeID = 0;
 export class AABBTree {
     constructor() {
+        this.nodeID = 0;
         this.root = undefined;
     }
-    add(aabb) {
+    update() {
+        let invalidNodes = [];
+        this.traverse(node => {
+            if (node.isLeaf) {
+                let box = node.item;
+                let tightAABB = toAABB(box, 0.0);
+                if (containsAABB(node.aabb, tightAABB))
+                    return;
+                invalidNodes.push(node);
+            }
+        });
+        // Re-insert the invalid nodes
+        for (let node of invalidNodes) {
+            this.remove(node);
+            this.add(node.item);
+        }
+    }
+    reset() {
+        this.nodeID = 0;
+        this.root = undefined;
+    }
+    add(box) {
+        // Enlarged AABB
+        let aabb = toAABB(box, Settings.aabbMargin);
         let newNode = {
-            id: nodeID++,
+            id: this.nodeID++,
             aabb: aabb,
             isLeaf: true,
+            item: box
         };
+        box.node = newNode;
         if (this.root == undefined) {
             this.root = newNode;
         }
@@ -42,7 +69,7 @@ export class AABBTree {
             }
             let oldParent = bestSibling.parent;
             let newParent = {
-                id: nodeID++,
+                id: this.nodeID++,
                 parent: oldParent,
                 aabb: union(aabb, bestSibling.aabb),
                 isLeaf: false
@@ -79,6 +106,7 @@ export class AABBTree {
     }
     remove(node) {
         let parent = node.parent;
+        node.item.node = undefined;
         if (parent != undefined) {
             let sibling = parent.child1 == node ? parent.child2 : parent.child1;
             if (parent.parent != undefined) {
@@ -115,7 +143,7 @@ export class AABBTree {
         let q = [this.root];
         while (q.length != 0) {
             let current = q.shift();
-            if (!checkPointInside(current.aabb, point))
+            if (!testPointInside(current.aabb, point))
                 continue;
             if (current.isLeaf) {
                 res.push(current);
@@ -134,7 +162,7 @@ export class AABBTree {
         let q = [this.root];
         while (q.length != 0) {
             let current = q.shift();
-            if (!checkCollideAABB(current.aabb, region))
+            if (!detectCollisionAABB(current.aabb, region))
                 continue;
             if (current.isLeaf) {
                 res.push(current);
@@ -164,14 +192,14 @@ export class AABBTree {
         checked.add(key);
         debugCount++;
         if (a.isLeaf && b.isLeaf) {
-            if (checkCollideAABB(a.aabb, b.aabb)) {
+            if (detectCollisionAABB(a.aabb, b.aabb)) {
                 pairs.push({ p1: a, p2: b });
             }
         }
         else if (!a.isLeaf && !b.isLeaf) {
             this.checkCollision(a.child1, a.child2, pairs, checked);
             this.checkCollision(b.child1, b.child2, pairs, checked);
-            if (checkCollideAABB(a.aabb, b.aabb)) {
+            if (detectCollisionAABB(a.aabb, b.aabb)) {
                 this.checkCollision(a.child1, b.child1, pairs, checked);
                 this.checkCollision(a.child1, b.child2, pairs, checked);
                 this.checkCollision(a.child2, b.child1, pairs, checked);
@@ -180,16 +208,30 @@ export class AABBTree {
         }
         else if (a.isLeaf && !b.isLeaf) {
             this.checkCollision(b.child1, b.child2, pairs, checked);
-            if (checkCollideAABB(a.aabb, b.aabb)) {
+            if (detectCollisionAABB(a.aabb, b.aabb)) {
                 this.checkCollision(a, b.child1, pairs, checked);
                 this.checkCollision(a, b.child2, pairs, checked);
             }
         }
         else if (!a.isLeaf && b.isLeaf) {
             this.checkCollision(a.child1, a.child2, pairs, checked);
-            if (checkCollideAABB(a.aabb, b.aabb)) {
+            if (detectCollisionAABB(a.aabb, b.aabb)) {
                 this.checkCollision(b, a.child1, pairs, checked);
                 this.checkCollision(b, a.child2, pairs, checked);
+            }
+        }
+    }
+    // BFS tree traversal
+    traverse(callback) {
+        let q = [this.root];
+        while (q.length != 0) {
+            let current = q.shift();
+            if (current == undefined)
+                break;
+            callback(current);
+            if (!current.isLeaf) {
+                q.push(current.child1);
+                q.push(current.child2);
             }
         }
     }

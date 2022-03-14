@@ -46,7 +46,10 @@
                             </div>
                             <div class="modal-body ms-2">
                                 <div class="row">
-                                    - Left click drag to create box
+                                    - Left click drag the air to create box
+                                </div>
+                                <div class="row">
+                                    - Drag the box to move
                                 </div>
                                 <div class="row">
                                     - Right click or wheel drag to remove box
@@ -80,6 +83,19 @@
                     <input type="range" class="form-range " id="genSpeed">
                 </div>
 
+                <div class="row">
+                    <label for="margin" class="form-label col-9 p-0 m-0">AABB margin</label>
+                    <div class="col text-end p-0 m-0" id="margin_label">0ms</div>
+                    <input type="range" class="form-range " id="margin">
+                </div>
+
+                <br>
+                <div class="row">
+                    <div class="form-check form-switch m-0">
+                        <label class="form-check-label" for="colorize">Colorize bounding box</label>
+                        <input class="form-check-input " type="checkbox" role="switch" id="colorize">
+                    </div>
+                </div>
                 <br>
 
                 <div class="row fs-5" id="collsionPairsLabel">

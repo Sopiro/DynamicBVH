@@ -1,5 +1,4 @@
 import { Vector2 } from "./math.js";
-import { PRNG } from "./prng.js";
 
 export class AABB
 {
@@ -20,7 +19,7 @@ export class AABB
     }
 }
 
-function fix(aabb: AABB): void
+export function fix(aabb: AABB): void
 {
     let minX = Math.min(aabb.min.x, aabb.max.x);
     let maxX = Math.max(aabb.min.x, aabb.max.x);
@@ -33,7 +32,7 @@ function fix(aabb: AABB): void
     aabb.max.y = maxY;
 }
 
-export function newAABB(x: number, y: number, w: number, h: number): AABB
+export function createAABB(x: number, y: number, w: number, h: number): AABB
 {
     return new AABB(new Vector2(x, y), new Vector2(x + w, y + h));
 }
@@ -50,7 +49,7 @@ export function union(b1: AABB, b2: AABB): AABB
     return res;
 }
 
-export function checkPointInside(aabb: AABB, point: Vector2): boolean
+export function testPointInside(aabb: AABB, point: Vector2): boolean
 {
     if (aabb.min.x > point.x || aabb.max.x < point.x) return false;
     if (aabb.min.y > point.y || aabb.max.y < point.y) return false;
@@ -58,7 +57,7 @@ export function checkPointInside(aabb: AABB, point: Vector2): boolean
     return true;
 }
 
-export function checkCollideAABB(a: AABB, b: AABB): boolean
+export function detectCollisionAABB(a: AABB, b: AABB): boolean
 {
     if (a.min.x > b.max.x || a.max.x < b.min.x) return false;
     if (a.min.y > b.max.y || a.max.y < b.min.y) return false;
@@ -66,10 +65,10 @@ export function checkCollideAABB(a: AABB, b: AABB): boolean
     return true;
 }
 
-const rand = new PRNG(1234);
-
-export function uniqueColor(aabb: AABB): string
+export function containsAABB(container: AABB, target: AABB): boolean
 {
-    rand.setSeed((aabb.min.x << 16) + (aabb.min.y << 8) + (aabb.max.x << 4) + aabb.max.y);
-    return rand.nextColor();
+    return container.min.x <= target.min.x
+        && container.min.y <= target.min.y
+        && container.max.x >= target.max.x
+        && container.max.y >= target.max.y
 }

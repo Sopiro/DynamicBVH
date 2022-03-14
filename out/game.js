@@ -3,9 +3,10 @@ import * as Input from "./input.js";
 import * as Util from "./util.js";
 import { Camera } from "./camera.js";
 import { Settings } from "./settings.js";
-import { AABB, newAABB, uniqueColor } from "./aabb.js";
+import { AABB, detectCollisionAABB } from "./aabb.js";
 import { PRNG } from "./prng.js";
 import { AABBTree, debugCount } from "./aabbtree.js";
+import { Box, toAABB, toBox } from "./box.js";
 export class Game {
     constructor(renderer) {
         this.cameraMove = false;
@@ -15,6 +16,7 @@ export class Game {
         this.frame = 0;
         this.initRoutines = [];
         this.creating = false;
+        this.grabbing = false;
         this.removing = false;
         this.clickStart = new Vector2(0, 0);
         this.clickEnd = new Vector2(0, 0);
@@ -35,7 +37,7 @@ export class Game {
         this.init();
     }
     init() {
-        this.tree.root = undefined;
+        this.tree.reset();
         for (let r of this.initRoutines)
             clearInterval(r);
         // Random initial spread
@@ -51,7 +53,7 @@ export class Game {
             let ry = rand.nextRange(bottomLeft.y, topRight.y - mh);
             let rw = rand.nextRange(0.2, mw);
             let rh = rand.nextRange(0.2, mh);
-            this.tree.add(newAABB(rx, ry, rw, rh));
+            this.tree.add(new Box(new Vector2(rx, ry), rw, rh));
             if (this.boxCount >= Settings.boxCount)
                 clearInterval(routine);
         }, Settings.genSpeed);
@@ -62,8 +64,19 @@ export class Game {
         this.frame++;
         this.time += delta;
         this.handleInput(delta);
+        this.tree.update();
+        // Broad phase
         let collisionPairs = this.tree.getCollisionPairs();
-        this.collsionPairsLabel.innerHTML = "Collision pairs: " + collisionPairs.length;
+        let realCollisionPairs = [];
+        for (let pair of collisionPairs) {
+            let tightAABB1 = toAABB(pair.p1.item);
+            let tightAABB2 = toAABB(pair.p2.item);
+            // Narrow phase
+            if (detectCollisionAABB(tightAABB1, tightAABB2)) {
+                realCollisionPairs.push({ p1: pair.p1.item, p2: pair.p2.item });
+            }
+        }
+        this.collsionPairsLabel.innerHTML = "Collision pairs: " + realCollisionPairs.length;
         let nSquared = (this.boxCount * this.boxCount - this.boxCount) / 2.0;
         let bvh = nSquared / debugCount;
         this.efficientCheckLabel.innerHTML = "Box count: " + this.boxCount + "<br>"
@@ -106,7 +119,15 @@ export class Game {
         if (Input.isMousePressed(0)) {
             if (!this.creating && !this.removing) {
                 this.clickStart = this.renderer.pick(Input.mousePosition);
-                this.creating = true;
+                let queryResult = this.tree.queryPoint(this.clickStart);
+                if (queryResult.length == 0) {
+                    this.creating = true;
+                }
+                else {
+                    this.grabbedBox = queryResult[0].item;
+                    this.grabStart = this.grabbedBox.position.copy();
+                    this.grabbing = true;
+                }
             }
         }
         if (Input.isMousePressed(1)) {
@@ -119,6 +140,11 @@ export class Game {
             if (this.creating) {
                 this.clickEnd = this.renderer.pick(Input.mousePosition);
             }
+            else if (this.grabbing) {
+                this.clickEnd = this.renderer.pick(Input.mousePosition);
+                let delta = this.clickEnd.sub(this.clickStart);
+                this.grabbedBox.position = this.grabStart.add(delta);
+            }
         }
         if (Input.isMouseDown(1)) {
             if (this.removing) {
@@ -128,7 +154,8 @@ export class Game {
         if (Input.isMouseReleased(0)) {
             if (this.creating) {
                 if (this.clickEnd.sub(this.clickStart).length > 0.000001) {
-                    this.tree.add(new AABB(this.clickStart, this.clickEnd));
+                    let aabb = new AABB(this.clickStart, this.clickEnd);
+                    this.tree.add(toBox(aabb));
                     this.boxCount++;
                 }
                 this.creating = false;
@@ -156,19 +183,16 @@ export class Game {
     render(r) {
         r.setCameraTransform(this.camera.cameraTransform);
         r.setModelTransform(new Matrix3());
-        if (this.creating || this.removing) {
-            r.drawAABB(new AABB(this.clickStart.copy(), this.clickEnd.copy()), undefined);
-        }
-        let q = [this.tree.root];
-        while (q.length != 0) {
-            let current = q.shift();
-            if (current == undefined)
-                break;
-            r.drawAABB(current.aabb, current.isLeaf ? uniqueColor(current.aabb) : undefined);
-            if (!current.isLeaf) {
-                q.push(current.child1);
-                q.push(current.child2);
+        this.tree.traverse(node => {
+            if (node.isLeaf && Settings.colorizeBox) {
+                let box = node.item;
+                let aabb = toAABB(box);
+                r.drawAABB(aabb, box.color);
             }
+            r.drawAABB(node.aabb, "#00000000", "#00000055");
+        });
+        if (this.creating || this.removing) {
+            r.drawAABB(new AABB(this.clickStart.copy(), this.clickEnd.copy()));
         }
     }
 }
