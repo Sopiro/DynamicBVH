@@ -8,6 +8,7 @@ import { AABB, detectCollisionAABB } from "./aabb.js";
 import { PRNG } from "./prng.js";
 import { AABBTree, debugCount } from "./aabbtree.js";
 import { Box, toAABB, toBox } from "./box.js";
+import { Timer } from "./timer.js";
 
 export class Game
 {
@@ -38,7 +39,10 @@ export class Game
     private boxCount = 0;
 
     private collsionPairsLabel: HTMLDivElement;
+    private surfaceAreaLabel: HTMLDivElement;
     private efficientCheckLabel: HTMLDivElement;
+
+    private timer: Timer = new Timer();
 
     constructor(renderer: Renderer)
     {
@@ -63,6 +67,7 @@ export class Game
         });
 
         this.collsionPairsLabel = document.querySelector("#collsionPairsLabel") as HTMLDivElement;
+        this.surfaceAreaLabel = document.querySelector("#surfaceAreaLabel") as HTMLDivElement;
         this.efficientCheckLabel = document.querySelector("#efficientCheckLabel") as HTMLDivElement;
 
         this.init();
@@ -70,31 +75,40 @@ export class Game
 
     init(): void
     {
+        this.timer.reset();
         this.tree.reset();
 
         for (let r of this.initRoutines)
             clearInterval(r);
 
         // Random initial spread
-        let rand = new PRNG(Math.random());
+        let rand = new PRNG(1);
 
-        let mw = 0.9;
-        let mh = 0.9;
+        let minW = 0.2;
+        let minH = 0.2;
+        let maxW = 0.9;
+        let maxH = 0.9;
         this.boxCount = 0;
+        this.timer.mark();
         let routine = setInterval(() =>
         {
             let bottomLeft = this.renderer.pick(new Vector2(0, 0));
             let topRight = this.renderer.pick(new Vector2(Settings.width, Settings.height));
 
             this.boxCount++;
-            let rx = rand.nextRange(bottomLeft.x, topRight.x - mw);
-            let ry = rand.nextRange(bottomLeft.y, topRight.y - mh);
-            let rw = rand.nextRange(0.2, mw);
-            let rh = rand.nextRange(0.2, mh);
+            let rx = rand.nextRange(bottomLeft.x, topRight.x - maxW);
+            let ry = rand.nextRange(bottomLeft.y, topRight.y - maxH);
+            let rw = rand.nextRange(minW, maxW);
+            let rh = rand.nextRange(minH, maxH);
 
             this.tree.add(new Box(new Vector2(rx, ry), rw, rh));
 
-            if (this.boxCount >= Settings.boxCount) clearInterval(routine);
+            if (this.boxCount >= Settings.boxCount)
+            {
+                clearInterval(routine);
+                this.timer.mark();
+                console.log((this.timer.lastElapsed / 1000.0).toFixed(2) + "s");
+            }
         }, Settings.genSpeed);
 
         this.initRoutines.push(routine);
@@ -126,6 +140,11 @@ export class Game
         }
 
         this.collsionPairsLabel.innerHTML = "Collision pairs: " + realCollisionPairs.length;
+        if (this.timer.times.length < 2)
+        {
+            this.updateCostLabel();
+        }
+
 
         let nSquared = (this.boxCount * this.boxCount - this.boxCount) / 2.0;
         let bvh = nSquared / debugCount;
@@ -136,7 +155,7 @@ export class Game
             + "Dynamic BVH is " + (isNaN(bvh) ? "0" : bvh.toFixed(2)) + " times more efficient";
     }
 
-    private handleInput(delta: number)
+    private handleInput(delta: number): void
     {
         const mx = Input.isKeyDown("ArrowLeft") ? -1 : Input.isKeyDown("ArrowRight") ? 1 : 0;
         const my = Input.isKeyDown("ArrowDown") ? -1 : Input.isKeyDown("ArrowUp") ? 1 : 0;
@@ -226,6 +245,7 @@ export class Game
                 let delta = this.clickEnd.sub(this.clickStart);
 
                 this.grabbedBox.position = this.grabStart.add(delta);
+                this.updateCostLabel();
             }
         }
 
@@ -247,6 +267,7 @@ export class Game
 
                     this.tree.add(toBox(aabb));
                     this.boxCount++;
+                    this.updateCostLabel();
                 }
 
                 this.creating = false;
@@ -266,6 +287,7 @@ export class Game
                 }
 
                 this.removing = false;
+                this.updateCostLabel();
             }
         }
 
@@ -280,7 +302,13 @@ export class Game
             {
                 this.tree.remove(n);
             }
+            this.updateCostLabel();
         }
+    }
+
+    private updateCostLabel(): void
+    {
+        this.surfaceAreaLabel.innerHTML = "Tree surface area: " + this.tree.cost.toFixed(2);
     }
 
     render(r: Renderer): void

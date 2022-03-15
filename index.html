@@ -92,6 +92,12 @@
                 <br>
                 <div class="row">
                     <div class="form-check form-switch m-0">
+                        <label class="form-check-label" for="applyRotation">Apply tree rotation</label>
+                        <input class="form-check-input " type="checkbox" role="switch" id="applyRotation">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="form-check form-switch m-0">
                         <label class="form-check-label" for="colorize">Colorize bounding box</label>
                         <input class="form-check-input " type="checkbox" role="switch" id="colorize">
                     </div>
@@ -101,13 +107,16 @@
                 <div class="row fs-5" id="collsionPairsLabel">
                     Collision pairs: 0
                 </div>
+                <div class="row fs-5" id="surfaceAreaLabel">
+                    Tree surface area: 0
+                </div>
                 <br>
 
                 <div class="row fs-5" id="collsionPairsLabel">
                     Collision checks
                 </div>
                 <div class="row" id="efficientCheckLabel" style="font-size: 1.1rem;">
-                    
+
                 </div>
             </div>
         </div>

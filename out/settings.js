@@ -25,6 +25,7 @@ export const Settings = {
     genSpeed: 50,
     aabbMargin: 0.1,
     colorizeBox: true,
+    applyRotation: true,
 };
 // Remove the default pop-up context menu
 let cvs = document.querySelector("#canvas");
@@ -64,6 +65,9 @@ margin.addEventListener("input", () => {
 const colorize = document.querySelector("#colorize");
 colorize.checked = Settings.colorizeBox;
 colorize.addEventListener("click", () => { Settings.colorizeBox = colorize.checked; });
+const applyRotation = document.querySelector("#applyRotation");
+applyRotation.checked = Settings.applyRotation;
+applyRotation.addEventListener("click", () => { Settings.applyRotation = applyRotation.checked; });
 export function updateSetting(id, content) {
     switch (id) {
         case "pause":
