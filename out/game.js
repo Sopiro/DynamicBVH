@@ -37,6 +37,7 @@ export class Game {
         this.collsionPairsLabel = document.querySelector("#collsionPairsLabel");
         this.surfaceAreaLabel = document.querySelector("#surfaceAreaLabel");
         this.efficientCheckLabel = document.querySelector("#efficientCheckLabel");
+        this.seedTextBox = document.querySelector("#seedTextBox");
         this.init();
     }
     init() {
@@ -45,7 +46,9 @@ export class Game {
         for (let r of this.initRoutines)
             clearInterval(r);
         // Random initial spread
-        let rand = new PRNG(1);
+        let seedString = this.seedTextBox.value;
+        let seed = seedString.length == 0 ? Util.random(0, 10000) : Util.stringHash(seedString);
+        let rand = new PRNG(seed);
         let minW = 0.2;
         let minH = 0.2;
         let maxW = 0.9;

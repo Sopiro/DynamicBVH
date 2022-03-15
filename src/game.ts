@@ -41,6 +41,7 @@ export class Game
     private collsionPairsLabel: HTMLDivElement;
     private surfaceAreaLabel: HTMLDivElement;
     private efficientCheckLabel: HTMLDivElement;
+    private seedTextBox: HTMLInputElement;
 
     private timer: Timer = new Timer();
 
@@ -69,6 +70,7 @@ export class Game
         this.collsionPairsLabel = document.querySelector("#collsionPairsLabel") as HTMLDivElement;
         this.surfaceAreaLabel = document.querySelector("#surfaceAreaLabel") as HTMLDivElement;
         this.efficientCheckLabel = document.querySelector("#efficientCheckLabel") as HTMLDivElement;
+        this.seedTextBox = document.querySelector("#seedTextBox") as HTMLInputElement;
 
         this.init();
     }
@@ -82,7 +84,9 @@ export class Game
             clearInterval(r);
 
         // Random initial spread
-        let rand = new PRNG(1);
+        let seedString = this.seedTextBox.value;
+        let seed = seedString.length == 0 ? Util.random(0, 10000) : Util.stringHash(seedString);
+        let rand = new PRNG(seed);
 
         let minW = 0.2;
         let minH = 0.2;
