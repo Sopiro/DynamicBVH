@@ -3,11 +3,12 @@ import * as Input from "./input.js";
 import * as Util from "./util.js";
 import { Camera } from "./camera.js";
 import { Settings } from "./settings.js";
-import { AABB, detectCollisionAABB } from "./aabb.js";
+import { AABB } from "./aabb.js";
 import { PRNG } from "./prng.js";
 import { AABBTree, debugCount } from "./aabbtree.js";
-import { Box, toAABB, toBox } from "./box.js";
+import { Box, toBox } from "./box.js";
 import { Timer } from "./timer.js";
+import { detectCollision } from "./detection.js";
 export class Game {
     constructor(renderer) {
         this.cameraMove = false;
@@ -21,7 +22,7 @@ export class Game {
         this.removing = false;
         this.clickStart = new Vector2(0, 0);
         this.clickEnd = new Vector2(0, 0);
-        this.boxCount = 0;
+        this.entityCount = 0;
         this.timer = new Timer();
         this.renderer = renderer;
         this.camera = new Camera();
@@ -36,7 +37,7 @@ export class Game {
         });
         this.collsionPairsLabel = document.querySelector("#collsionPairsLabel");
         this.surfaceAreaLabel = document.querySelector("#surfaceAreaLabel");
-        this.efficientCheckLabel = document.querySelector("#efficientCheckLabel");
+        this.efficiencyCheckLabel = document.querySelector("#efficiencyCheckLabel");
         this.seedTextBox = document.querySelector("#seedTextBox");
         this.init();
     }
@@ -53,18 +54,18 @@ export class Game {
         let minH = 0.2;
         let maxW = 0.9;
         let maxH = 0.9;
-        this.boxCount = 0;
+        this.entityCount = 0;
         this.timer.mark();
         let routine = setInterval(() => {
             let bottomLeft = this.renderer.pick(new Vector2(0, 0));
             let topRight = this.renderer.pick(new Vector2(Settings.width, Settings.height));
-            this.boxCount++;
+            this.entityCount++;
             let rx = rand.nextRange(bottomLeft.x, topRight.x - maxW);
             let ry = rand.nextRange(bottomLeft.y, topRight.y - maxH);
             let rw = rand.nextRange(minW, maxW);
             let rh = rand.nextRange(minH, maxH);
             this.tree.add(new Box(new Vector2(rx, ry), rw, rh));
-            if (this.boxCount >= Settings.boxCount) {
+            if (this.entityCount >= Settings.boxCount) {
                 clearInterval(routine);
                 this.timer.mark();
                 console.log((this.timer.lastElapsed / 1000.0).toFixed(2) + "s");
@@ -82,20 +83,20 @@ export class Game {
         let collisionPairs = this.tree.getCollisionPairs();
         let realCollisionPairs = [];
         for (let pair of collisionPairs) {
-            let tightAABB1 = toAABB(pair.p1.item);
-            let tightAABB2 = toAABB(pair.p2.item);
+            let e1 = pair.p1.entity;
+            let e2 = pair.p2.entity;
             // Narrow phase
-            if (detectCollisionAABB(tightAABB1, tightAABB2)) {
-                realCollisionPairs.push({ p1: pair.p1.item, p2: pair.p2.item });
+            if (detectCollision(e1, e2)) {
+                realCollisionPairs.push({ p1: pair.p1.entity, p2: pair.p2.entity });
             }
         }
         this.collsionPairsLabel.innerHTML = "Collision pairs: " + realCollisionPairs.length;
         if (this.timer.times.length < 2) {
             this.updateCostLabel();
         }
-        let nSquared = (this.boxCount * this.boxCount - this.boxCount) / 2.0;
+        let nSquared = (this.entityCount * this.entityCount - this.entityCount) / 2.0;
         let bvh = nSquared / debugCount;
-        this.efficientCheckLabel.innerHTML = "Box count: " + this.boxCount + "<br>"
+        this.efficiencyCheckLabel.innerHTML = "Box count: " + this.entityCount + "<br>"
             + "BruteForce: " + nSquared + "<br>"
             + "Dynamic BVH: " + debugCount + "<br>"
             + "Dynamic BVH is " + (isNaN(bvh) ? "0" : bvh.toFixed(2)) + " times more efficient";
@@ -140,8 +141,8 @@ export class Game {
                     this.creating = true;
                 }
                 else {
-                    this.grabbedBox = queryResult[0].item;
-                    this.grabStart = this.grabbedBox.position.copy();
+                    this.grabbedEntity = queryResult[0].entity;
+                    this.grabStart = this.grabbedEntity.position.copy();
                     this.grabbing = true;
                 }
             }
@@ -159,7 +160,7 @@ export class Game {
             else if (this.grabbing) {
                 this.clickEnd = this.renderer.pick(Input.mousePosition);
                 let delta = this.clickEnd.sub(this.clickStart);
-                this.grabbedBox.position = this.grabStart.add(delta);
+                this.grabbedEntity.position = this.grabStart.add(delta);
                 this.updateCostLabel();
             }
         }
@@ -173,7 +174,7 @@ export class Game {
                 if (this.clickEnd.sub(this.clickStart).length > 0.000001) {
                     let aabb = new AABB(this.clickStart, this.clickEnd);
                     this.tree.add(toBox(aabb));
-                    this.boxCount++;
+                    this.entityCount++;
                     this.updateCostLabel();
                 }
                 this.creating = false;
@@ -182,7 +183,7 @@ export class Game {
         if (Input.isMouseReleased(1)) {
             if (this.removing) {
                 let res = this.tree.queryRegion(new AABB(this.clickStart, this.clickEnd));
-                this.boxCount -= res.length;
+                this.entityCount -= res.length;
                 for (let n of res) {
                     this.tree.remove(n);
                 }
@@ -193,7 +194,7 @@ export class Game {
         if (Input.isMousePressed(2)) {
             let mp = this.renderer.pick(Input.mousePosition);
             let res = this.tree.queryPoint(mp);
-            this.boxCount -= res.length;
+            this.entityCount -= res.length;
             for (let n of res) {
                 this.tree.remove(n);
             }
@@ -207,10 +208,9 @@ export class Game {
         r.setCameraTransform(this.camera.cameraTransform);
         r.setModelTransform(new Matrix3());
         this.tree.traverse(node => {
-            if (node.isLeaf && Settings.colorizeBox) {
-                let box = node.item;
-                let aabb = toAABB(box);
-                r.drawAABB(aabb, box.color);
+            if (node.isLeaf && Settings.colorize) {
+                let entity = node.entity;
+                r.drawEntity(entity);
             }
             r.drawAABB(node.aabb, "#00000000", "#00000055");
         });

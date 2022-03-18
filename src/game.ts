@@ -4,11 +4,13 @@ import * as Util from "./util.js";
 import { Renderer } from "./renderer.js";
 import { Camera } from "./camera.js";
 import { Settings } from "./settings.js";
-import { AABB, detectCollisionAABB } from "./aabb.js";
+import { AABB } from "./aabb.js";
 import { PRNG } from "./prng.js";
 import { AABBTree, debugCount } from "./aabbtree.js";
-import { Box, toAABB, toBox } from "./box.js";
+import { Box, toBox } from "./box.js";
 import { Timer } from "./timer.js";
+import { Entity } from "./entity.js";
+import { detectCollision } from "./detection.js";
 
 export class Game
 {
@@ -33,14 +35,14 @@ export class Game
     private clickStart: Vector2 = new Vector2(0, 0);
     private clickEnd: Vector2 = new Vector2(0, 0);
 
-    private grabbedBox!: Box;
+    private grabbedEntity!: Entity;
     private grabStart!: Vector2;
 
-    private boxCount = 0;
+    private entityCount = 0;
 
     private collsionPairsLabel: HTMLDivElement;
     private surfaceAreaLabel: HTMLDivElement;
-    private efficientCheckLabel: HTMLDivElement;
+    private efficiencyCheckLabel: HTMLDivElement;
     private seedTextBox: HTMLInputElement;
 
     private timer: Timer = new Timer();
@@ -69,7 +71,7 @@ export class Game
 
         this.collsionPairsLabel = document.querySelector("#collsionPairsLabel") as HTMLDivElement;
         this.surfaceAreaLabel = document.querySelector("#surfaceAreaLabel") as HTMLDivElement;
-        this.efficientCheckLabel = document.querySelector("#efficientCheckLabel") as HTMLDivElement;
+        this.efficiencyCheckLabel = document.querySelector("#efficiencyCheckLabel") as HTMLDivElement;
         this.seedTextBox = document.querySelector("#seedTextBox") as HTMLInputElement;
 
         this.init();
@@ -92,14 +94,14 @@ export class Game
         let minH = 0.2;
         let maxW = 0.9;
         let maxH = 0.9;
-        this.boxCount = 0;
+        this.entityCount = 0;
         this.timer.mark();
         let routine = setInterval(() =>
         {
             let bottomLeft = this.renderer.pick(new Vector2(0, 0));
             let topRight = this.renderer.pick(new Vector2(Settings.width, Settings.height));
 
-            this.boxCount++;
+            this.entityCount++;
             let rx = rand.nextRange(bottomLeft.x, topRight.x - maxW);
             let ry = rand.nextRange(bottomLeft.y, topRight.y - maxH);
             let rw = rand.nextRange(minW, maxW);
@@ -107,7 +109,7 @@ export class Game
 
             this.tree.add(new Box(new Vector2(rx, ry), rw, rh));
 
-            if (this.boxCount >= Settings.boxCount)
+            if (this.entityCount >= Settings.boxCount)
             {
                 clearInterval(routine);
                 this.timer.mark();
@@ -130,16 +132,16 @@ export class Game
         // Broad phase
         let collisionPairs = this.tree.getCollisionPairs();
 
-        let realCollisionPairs: Util.Pair<Box, Box>[] = [];
+        let realCollisionPairs: Util.Pair<Entity, Entity>[] = [];
         for (let pair of collisionPairs)
         {
-            let tightAABB1 = toAABB(pair.p1.item!);
-            let tightAABB2 = toAABB(pair.p2.item!);
+            let e1 = pair.p1.entity!;
+            let e2 = pair.p2.entity!;
 
             // Narrow phase
-            if (detectCollisionAABB(tightAABB1, tightAABB2))
+            if (detectCollision(e1, e2))
             {
-                realCollisionPairs.push({ p1: pair.p1.item!, p2: pair.p2.item! });
+                realCollisionPairs.push({ p1: pair.p1.entity!, p2: pair.p2.entity! });
             }
         }
 
@@ -149,11 +151,10 @@ export class Game
             this.updateCostLabel();
         }
 
-
-        let nSquared = (this.boxCount * this.boxCount - this.boxCount) / 2.0;
+        let nSquared = (this.entityCount * this.entityCount - this.entityCount) / 2.0;
         let bvh = nSquared / debugCount;
 
-        this.efficientCheckLabel.innerHTML = "Box count: " + this.boxCount + "<br>"
+        this.efficiencyCheckLabel.innerHTML = "Box count: " + this.entityCount + "<br>"
             + "BruteForce: " + nSquared + "<br>"
             + "Dynamic BVH: " + debugCount + "<br>"
             + "Dynamic BVH is " + (isNaN(bvh) ? "0" : bvh.toFixed(2)) + " times more efficient";
@@ -220,8 +221,8 @@ export class Game
                 }
                 else
                 {
-                    this.grabbedBox = queryResult[0].item!;
-                    this.grabStart = this.grabbedBox.position.copy();
+                    this.grabbedEntity = queryResult[0].entity!;
+                    this.grabStart = this.grabbedEntity.position.copy();
                     this.grabbing = true;
                 }
             }
@@ -248,7 +249,7 @@ export class Game
 
                 let delta = this.clickEnd.sub(this.clickStart);
 
-                this.grabbedBox.position = this.grabStart.add(delta);
+                this.grabbedEntity.position = this.grabStart.add(delta);
                 this.updateCostLabel();
             }
         }
@@ -270,7 +271,7 @@ export class Game
                     let aabb = new AABB(this.clickStart, this.clickEnd);
 
                     this.tree.add(toBox(aabb));
-                    this.boxCount++;
+                    this.entityCount++;
                     this.updateCostLabel();
                 }
 
@@ -284,7 +285,7 @@ export class Game
             {
                 let res = this.tree.queryRegion(new AABB(this.clickStart, this.clickEnd));
 
-                this.boxCount -= res.length;
+                this.entityCount -= res.length;
                 for (let n of res)
                 {
                     this.tree.remove(n);
@@ -300,7 +301,7 @@ export class Game
             let mp = this.renderer.pick(Input.mousePosition);
             let res = this.tree.queryPoint(mp);
 
-            this.boxCount -= res.length;
+            this.entityCount -= res.length;
 
             for (let n of res)
             {
@@ -322,11 +323,10 @@ export class Game
 
         this.tree.traverse(node =>
         {
-            if (node.isLeaf && Settings.colorizeBox)
+            if (node.isLeaf && Settings.colorize)
             {
-                let box = node.item!;
-                let aabb = toAABB(box);
-                r.drawAABB(aabb, box.color);
+                let entity = node.entity!;
+                r.drawEntity(entity);
             }
 
             r.drawAABB(node.aabb, "#00000000", "#00000055");

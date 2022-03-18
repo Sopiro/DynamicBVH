@@ -28,7 +28,7 @@ export const Settings = {
     boxCount: 15,
     genSpeed: 50,
     aabbMargin: 0.1,
-    colorizeBox: true,
+    colorize: true,
     applyRotation: true,
 }
 
@@ -79,8 +79,8 @@ margin.addEventListener("input", () =>
 });
 
 const colorize = document.querySelector("#colorize")! as HTMLInputElement;
-colorize.checked = Settings.colorizeBox;
-colorize.addEventListener("click", () => { Settings.colorizeBox = colorize.checked; });
+colorize.checked = Settings.colorize;
+colorize.addEventListener("click", () => { Settings.colorize = colorize.checked; });
 
 const applyRotation = document.querySelector("#applyRotation")! as HTMLInputElement;
 applyRotation.checked = Settings.applyRotation;

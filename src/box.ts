@@ -1,7 +1,6 @@
 import { AABB } from "./aabb.js";
 import { Entity } from "./entity.js";
 import { Vector2 } from "./math.js";
-import { Node } from "./aabbtree.js";
 import { PRNG } from "./prng.js";
 
 export class Box extends Entity
@@ -10,9 +9,6 @@ export class Box extends Entity
     public width: number;
     public height: number;
 
-    // Pointer to the node in the AABB tree
-    public node?: Node;
-
     constructor(position: Vector2, width: number, height: number)
     {
         super();
@@ -20,17 +16,9 @@ export class Box extends Entity
         this.position = position;
         this.width = width;
         this.height = height;
-        
+
         this.color = uniqueColor(this);
     }
-}
-
-export function toAABB(box: Box, margin: number = 0.0): AABB
-{
-    return new AABB(
-        new Vector2(box.position.x - margin, box.position.y - margin),
-        new Vector2(box.position.x + box.width + margin, box.position.y + box.height + margin)
-    );
 }
 
 export function toBox(aabb: AABB): Box

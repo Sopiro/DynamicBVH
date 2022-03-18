@@ -1,3 +1,5 @@
+import { toAABB } from "./aabb.js";
+import { Box } from "./box.js";
 import { Vector2 } from "./math.js";
 import { Settings } from "./settings.js";
 export class Renderer {
@@ -101,5 +103,13 @@ export class Renderer {
             this.gfx.fill();
         this.gfx.stroke();
         this.gfx.fillStyle = "#000000";
+    }
+    drawEntity(entity) {
+        if (entity instanceof Box) {
+            this.drawAABB(toAABB(entity), entity.color);
+        }
+        else {
+            throw "Not a supported shape";
+        }
     }
 }

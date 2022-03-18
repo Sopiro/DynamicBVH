@@ -1,3 +1,4 @@
+import { Box } from "./box.js";
 import { Vector2 } from "./math.js";
 export class AABB {
     constructor(min = new Vector2(), max = new Vector2()) {
@@ -49,4 +50,12 @@ export function containsAABB(container, target) {
         && container.min.y <= target.min.y
         && container.max.x >= target.max.x
         && container.max.y >= target.max.y;
+}
+export function toAABB(entity, margin = 0.0) {
+    if (entity instanceof Box) {
+        return new AABB(new Vector2(entity.position.x - margin, entity.position.y - margin), new Vector2(entity.position.x + entity.width + margin, entity.position.y + entity.height + margin));
+    }
+    else {
+        throw "Not a supported shape";
+    }
 }

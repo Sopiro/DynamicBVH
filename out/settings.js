@@ -24,7 +24,7 @@ export const Settings = {
     boxCount: 15,
     genSpeed: 50,
     aabbMargin: 0.1,
-    colorizeBox: true,
+    colorize: true,
     applyRotation: true,
 };
 // Remove the default pop-up context menu
@@ -63,8 +63,8 @@ margin.addEventListener("input", () => {
     updateSetting("margin", mappedValue);
 });
 const colorize = document.querySelector("#colorize");
-colorize.checked = Settings.colorizeBox;
-colorize.addEventListener("click", () => { Settings.colorizeBox = colorize.checked; });
+colorize.checked = Settings.colorize;
+colorize.addEventListener("click", () => { Settings.colorize = colorize.checked; });
 const applyRotation = document.querySelector("#applyRotation");
 applyRotation.checked = Settings.applyRotation;
 applyRotation.addEventListener("click", () => { Settings.applyRotation = applyRotation.checked; });

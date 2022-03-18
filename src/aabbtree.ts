@@ -1,5 +1,5 @@
-import { AABB, containsAABB, detectCollisionAABB, testPointInside, union } from "./aabb.js";
-import { Box, toAABB } from "./box.js";
+import { AABB, containsAABB, detectCollisionAABB, testPointInside, union, toAABB } from "./aabb.js";
+import { Entity } from "./entity.js";
 import { Vector2 } from "./math.js";
 import { Settings } from "./settings.js";
 import { make_pair_natural, Pair } from "./util.js";
@@ -12,7 +12,7 @@ export interface Node
     child2?: Node;
     isLeaf: boolean;
     aabb: AABB;
-    item?: Box // User data
+    entity?: Entity; // Game object (user data)
 }
 
 export class AABBTree
@@ -20,7 +20,7 @@ export class AABBTree
     private nodeID: number = 0;
     public root?: Node = undefined;
 
-    update()
+    update(): void
     {
         let invalidNodes: Node[] = [];
 
@@ -28,8 +28,8 @@ export class AABBTree
         {
             if (node.isLeaf)
             {
-                let box = node.item!;
-                let tightAABB = toAABB(box, 0.0);
+                let entity = node.entity!;
+                let tightAABB = toAABB(entity, 0.0);
                 if (containsAABB(node.aabb, tightAABB)) return;
 
                 invalidNodes.push(node);
@@ -40,7 +40,7 @@ export class AABBTree
         for (let node of invalidNodes)
         {
             this.remove(node);
-            this.add(node.item!);
+            this.add(node.entity!);
         }
     }
 
@@ -50,19 +50,19 @@ export class AABBTree
         this.root = undefined;
     }
 
-    add(box: Box): Node
+    add(entity: Entity): Node
     {
         // Enlarged AABB
-        let aabb = toAABB(box, Settings.aabbMargin);
+        let aabb = toAABB(entity, Settings.aabbMargin);
 
         let newNode: Node =
         {
             id: this.nodeID++,
             aabb: aabb,
             isLeaf: true,
-            item: box
+            entity: entity
         }
-        box.node = newNode;
+        entity.node = newNode;
 
         if (this.root == undefined)
         {
@@ -162,7 +162,7 @@ export class AABBTree
         return newNode;
     }
 
-    private rotate(node: Node)
+    private rotate(node: Node): void
     {
         if (node.parent == undefined) return;
 
@@ -282,7 +282,7 @@ export class AABBTree
     remove(node: Node): void
     {
         let parent = node.parent;
-        node.item!.node = undefined;
+        node.entity!.node = undefined;
 
         if (parent != undefined)
         {

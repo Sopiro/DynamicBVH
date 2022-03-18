@@ -1,10 +1,14 @@
 import { Matrix3, Vector2 } from "./math.js";
+import { Node } from "./aabbtree.js";
 
 export class Entity
 {
     protected _position: Vector2;
     protected _rotation: number;
     protected _scale: Vector2;
+
+    // Pointer to the node in the AABB tree
+    public node?: Node;
 
     constructor()
     {

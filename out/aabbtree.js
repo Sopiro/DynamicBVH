@@ -1,5 +1,4 @@
-import { containsAABB, detectCollisionAABB, testPointInside, union } from "./aabb.js";
-import { toAABB } from "./box.js";
+import { containsAABB, detectCollisionAABB, testPointInside, union, toAABB } from "./aabb.js";
 import { Settings } from "./settings.js";
 import { make_pair_natural } from "./util.js";
 export class AABBTree {
@@ -11,8 +10,8 @@ export class AABBTree {
         let invalidNodes = [];
         this.traverse(node => {
             if (node.isLeaf) {
-                let box = node.item;
-                let tightAABB = toAABB(box, 0.0);
+                let entity = node.entity;
+                let tightAABB = toAABB(entity, 0.0);
                 if (containsAABB(node.aabb, tightAABB))
                     return;
                 invalidNodes.push(node);
@@ -21,23 +20,23 @@ export class AABBTree {
         // Re-insert the invalid nodes
         for (let node of invalidNodes) {
             this.remove(node);
-            this.add(node.item);
+            this.add(node.entity);
         }
     }
     reset() {
         this.nodeID = 0;
         this.root = undefined;
     }
-    add(box) {
+    add(entity) {
         // Enlarged AABB
-        let aabb = toAABB(box, Settings.aabbMargin);
+        let aabb = toAABB(entity, Settings.aabbMargin);
         let newNode = {
             id: this.nodeID++,
             aabb: aabb,
             isLeaf: true,
-            item: box
+            entity: entity
         };
-        box.node = newNode;
+        entity.node = newNode;
         if (this.root == undefined) {
             this.root = newNode;
         }
@@ -198,7 +197,7 @@ export class AABBTree {
     }
     remove(node) {
         let parent = node.parent;
-        node.item.node = undefined;
+        node.entity.node = undefined;
         if (parent != undefined) {
             let sibling = parent.child1 == node ? parent.child2 : parent.child1;
             if (parent.parent != undefined) {

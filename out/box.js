@@ -1,6 +1,4 @@
-import { AABB } from "./aabb.js";
 import { Entity } from "./entity.js";
-import { Vector2 } from "./math.js";
 import { PRNG } from "./prng.js";
 export class Box extends Entity {
     constructor(position, width, height) {
@@ -10,9 +8,6 @@ export class Box extends Entity {
         this.height = height;
         this.color = uniqueColor(this);
     }
-}
-export function toAABB(box, margin = 0.0) {
-    return new AABB(new Vector2(box.position.x - margin, box.position.y - margin), new Vector2(box.position.x + box.width + margin, box.position.y + box.height + margin));
 }
 export function toBox(aabb) {
     let size = aabb.max.sub(aabb.min);
