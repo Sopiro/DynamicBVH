@@ -9,7 +9,7 @@ Dynamic BVH is one of the spatial partitioning algorithms. You can accelerate a 
 
 Live demo: https://sopiro.github.io/DynamicBVH/  
 Video: https://youtu.be/lBe_qYDuG8I  
-Fairly optimized c++ version: https://github.com/Sopiro/SPE/blob/master/src/physics/aabbtree.h  
+Fairly optimized c++ version: https://github.com/Sopiro/SPE/blob/master/include/spe/physics/aabbtree.h  
 
 ## Preview
 ![img](.github/preview.gif)
