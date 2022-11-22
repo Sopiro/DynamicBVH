@@ -30,7 +30,11 @@ export class AABBTree
             {
                 let entity = node.entity!;
                 let tightAABB = toAABB(entity, 0.0);
-                if (containsAABB(node.aabb, tightAABB)) return;
+
+                if (containsAABB(node.aabb, tightAABB))
+                {
+                    return;
+                }
 
                 invalidNodes.push(node);
             }
@@ -148,7 +152,9 @@ export class AABBTree
             ancestor.aabb = union(child1.aabb, child2.aabb);
 
             if (Settings.applyRotation)
+            {
                 this.rotate(ancestor);
+            }
 
             ancestor = ancestor.parent;
         }
@@ -158,7 +164,10 @@ export class AABBTree
 
     private rotate(node: Node): void
     {
-        if (node.parent == undefined) return;
+        if (node.parent == undefined) 
+        {
+            return;
+        }
 
         let parent = node.parent;
         let sibling = parent.child1 == node ? parent.child2! : parent.child1!;
@@ -180,21 +189,27 @@ export class AABBTree
         for (let i = 1; i < costDiffs.length; i++)
         {
             if (costDiffs[i] < costDiffs[bestDiffIndex])
+            {
                 bestDiffIndex = i;
+            }
         }
 
         if (costDiffs[bestDiffIndex] < 0.0)
         {
-            console.log("Tree rotation: tpye " + bestDiffIndex);
+            console.log("Tree rotation: type " + bestDiffIndex);
             switch (bestDiffIndex)
             {
                 case 0:
                     // this.swap(sibling, node.child2!);
 
                     if (parent.child1 == sibling)
+                    {
                         parent.child1 = node.child2;
+                    }
                     else
+                    {
                         parent.child2 = node.child2;
+                    }
 
                     node.child2!.parent = parent;
 
@@ -206,9 +221,13 @@ export class AABBTree
                     // this.swap(sibling, node.child1!);
 
                     if (parent.child1 == sibling)
+                    {
                         parent.child1 = node.child1;
+                    }
                     else
+                    {
                         parent.child2 = node.child1;
+                    }
 
                     node.child1!.parent = parent;
 
@@ -220,9 +239,13 @@ export class AABBTree
                     // this.swap(node, sibling.child2!);
 
                     if (parent.child1 == node)
+                    {
                         parent.child1 = sibling.child2;
+                    }
                     else
+                    {
                         parent.child2 = sibling.child2;
+                    }
 
                     sibling.child2!.parent = parent;
 
@@ -234,9 +257,13 @@ export class AABBTree
                     // this.swap(node, sibling.child1!);
 
                     if (parent.child1 == node)
+                    {
                         parent.child1 = sibling.child1;
+                    }
                     else
+                    {
                         parent.child2 = sibling.child1;
+                    }
 
                     sibling.child1!.parent = parent;
 
@@ -261,15 +288,23 @@ export class AABBTree
         }
 
         if (parent1.child1 == node1)
+        {
             parent1.child1 = node2;
+        }
         else
+        {
             parent1.child2 = node2;
+        }
         node2.parent = parent1;
 
         if (parent2.child1 == node2)
+        {
             parent2.child1 = node1;
+        }
         else
+        {
             parent2.child2 = node1;
+        }
         node1.parent = parent2;
     }
 
@@ -323,7 +358,10 @@ export class AABBTree
     {
         let res: Node[] = [];
 
-        if (this.root == undefined) return res;
+        if (this.root == undefined)
+        {
+            return res;
+        }
 
         let q = [this.root];
 
@@ -332,7 +370,9 @@ export class AABBTree
             let current = q.shift()!;
 
             if (!testPointInside(current.aabb, point))
+            {
                 continue;
+            }
 
             if (current.isLeaf)
             {
@@ -352,7 +392,10 @@ export class AABBTree
     {
         let res: Node[] = [];
 
-        if (this.root == undefined) return res;
+        if (this.root == undefined) 
+        {
+            return res;
+        }
 
         let q = [this.root];
 
@@ -361,7 +404,9 @@ export class AABBTree
             let current = q.shift()!;
 
             if (!detectCollisionAABB(current.aabb, region))
+            {
                 continue;
+            }
 
             if (current.isLeaf)
             {
@@ -381,7 +426,10 @@ export class AABBTree
     {
         debugCount = 0;
 
-        if (this.root == undefined) return [];
+        if (this.root == undefined) 
+        {
+            return [];
+        }
 
         let res: Pair<Node, Node>[] = [];
         let checked: Set<number> = new Set<number>();
@@ -397,7 +445,10 @@ export class AABBTree
     private checkCollision(a: Node, b: Node, pairs: Pair<Node, Node>[], checked: Set<number>): void
     {
         const key = make_pair_natural(a.id, b.id);
-        if (checked.has(key)) return;
+        if (checked.has(key)) 
+        {
+            return;
+        }
 
         checked.add(key);
 
@@ -453,7 +504,10 @@ export class AABBTree
         while (q.length != 0)
         {
             let current = q.shift()!;
-            if (current == undefined) break;
+            if (current == undefined) 
+            {
+                break;
+            }
 
             callback(current);
 
