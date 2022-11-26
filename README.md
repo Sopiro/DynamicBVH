@@ -1,9 +1,7 @@
 # Dynamic Bounding Volume Hierarchies
 Dynamic BVH(Dynamic AABB tree) implementation in TypeScript.  
 
-Dynamic BVH is one of the spatial partitioning algorithms. You can accelerate a operation like volumetric querying and ray casting with this data structure. The code is written for 2D, but can be easily extended to 3D or higher dimensions.  
-
-*I used this algorithm for my physics engine to accelerate the broad phase collision detection process!*
+Dynamic BVH is one of the spatial partitioning data structures. You can accelerate a operation like volumetric querying and ray casting with BVH. The code is written for 2D, but can be easily extended to 3D or higher dimensions.  
 
 ---
 
