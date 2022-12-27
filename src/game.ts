@@ -4,7 +4,7 @@ import * as Util from "./util.js";
 import { Renderer } from "./renderer.js";
 import { Camera } from "./camera.js";
 import { Settings } from "./settings.js";
-import { AABB } from "./aabb.js";
+import { AABB, toAABB } from "./aabb.js";
 import { PRNG } from "./prng.js";
 import { AABBTree, debugCount } from "./aabbtree.js";
 import { Box, toBox } from "./box.js";
@@ -21,6 +21,7 @@ export class Game
     private cursorStart!: Vector2;
     private cameraMove = false;
 
+    private previousCursorPos!: Vector2;
     public cursorPos: Vector2 = new Vector2(0, 0);
     public deltaTime: number = 0.0;
     public time: number = 0.0;
@@ -107,7 +108,9 @@ export class Game
             let rw = rand.nextRange(minW, maxW);
             let rh = rand.nextRange(minH, maxH);
 
-            this.tree.add(new Box(new Vector2(rx, ry), rw, rh));
+            let entity = new Box(new Vector2(rx, ry), rw, rh);
+            let treeNode = this.tree.createNode(entity, toAABB(entity));
+            entity.node = treeNode;
 
             if (this.entityCount >= Settings.boxCount)
             {
@@ -127,21 +130,19 @@ export class Game
         this.time += delta;
         this.handleInput(delta);
 
-        this.tree.update();
-
         // Broad phase
         let collisionPairs = this.tree.getCollisionPairs();
 
         let realCollisionPairs: Util.Pair<Entity, Entity>[] = [];
         for (let pair of collisionPairs)
         {
-            let e1 = pair.p1.entity!;
-            let e2 = pair.p2.entity!;
+            let e1 = pair.p1.data!;
+            let e2 = pair.p2.data!;
 
             // Narrow phase
             if (detectCollision(e1, e2))
             {
-                realCollisionPairs.push({ p1: pair.p1.entity!, p2: pair.p2.entity! });
+                realCollisionPairs.push({ p1: pair.p1.data!, p2: pair.p2.data! });
             }
         }
 
@@ -167,6 +168,8 @@ export class Game
 
         this.camera.translate(new Vector2(mx, my).mul(delta * 10 * this.camera.scale.x));
         let tmpCursorPos = this.renderer.pick(Input.mousePosition);
+
+        this.previousCursorPos = this.cursorPos.copy();
 
         this.cursorPos.x = tmpCursorPos.x;
         this.cursorPos.y = tmpCursorPos.y;
@@ -221,7 +224,7 @@ export class Game
                 }
                 else
                 {
-                    this.grabbedEntity = queryResult[0].entity!;
+                    this.grabbedEntity = queryResult[0].data!;
                     this.grabStart = this.grabbedEntity.position.copy();
                     this.grabbing = true;
                 }
@@ -246,10 +249,14 @@ export class Game
             else if (this.grabbing)
             {
                 this.clickEnd = this.renderer.pick(Input.mousePosition);
-
                 let delta = this.clickEnd.sub(this.clickStart);
 
                 this.grabbedEntity.position = this.grabStart.add(delta);
+                let newAABB = toAABB(this.grabbedEntity);
+
+                let velocity = this.cursorPos.sub(this.previousCursorPos);
+                let moved = this.tree.moveNode(this.grabbedEntity.node!, newAABB, velocity, false);
+
                 this.updateCostLabel();
             }
         }
@@ -269,8 +276,11 @@ export class Game
                 if (this.clickEnd.sub(this.clickStart).length > 0.000001)
                 {
                     let aabb = new AABB(this.clickStart, this.clickEnd);
+                    let box = toBox(aabb);
 
-                    this.tree.add(toBox(aabb));
+                    let treeNode = this.tree.createNode(box, aabb);
+                    box.node = treeNode;
+
                     this.entityCount++;
                     this.updateCostLabel();
                 }
@@ -288,7 +298,7 @@ export class Game
                 this.entityCount -= res.length;
                 for (let n of res)
                 {
-                    this.tree.remove(n);
+                    this.tree.destoryNode(n);
                 }
 
                 this.removing = false;
@@ -305,7 +315,7 @@ export class Game
 
             for (let n of res)
             {
-                this.tree.remove(n);
+                this.tree.destoryNode(n);
             }
             this.updateCostLabel();
         }
@@ -325,7 +335,7 @@ export class Game
         {
             if (node.isLeaf && Settings.colorize)
             {
-                let entity = node.entity!;
+                let entity = node.data!;
                 r.drawEntity(entity);
             }
 

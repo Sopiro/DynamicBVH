@@ -17,6 +17,7 @@ export enum MouseMode
 const boxCountRange: Util.Pair<number, number> = { p1: 1, p2: 1000 };
 const genSpeedRange: Util.Pair<number, number> = { p1: 1, p2: 1000 };
 const marginRange: Util.Pair<number, number> = { p1: 0.0, p2: 1.0 };
+const multiplierRange: Util.Pair<number, number> = { p1: 0.0, p2: 10.0 };
 
 // Settings
 export const Settings = {
@@ -28,6 +29,7 @@ export const Settings = {
     boxCount: 15,
     genSpeed: 50,
     aabbMargin: 0.1,
+    aabbMultiplier: 4.0,
     colorize: true,
     applyRotation: true,
 }
@@ -78,6 +80,19 @@ margin.addEventListener("input", () =>
     updateSetting("margin", mappedValue);
 });
 
+const multiplier = document.querySelector("#multiplier")! as HTMLInputElement;
+multiplier.value = String(Util.map(Settings.aabbMultiplier, multiplierRange.p1, multiplierRange.p2, 0, 100));
+const multiplierLabel = document.querySelector("#multiplier_label")! as HTMLLabelElement;
+multiplierLabel.innerHTML = String(Settings.aabbMultiplier);
+multiplier.addEventListener("input", () =>
+{
+    let mappedValue = Util.map(Number(multiplier.value), 0, 100, multiplierRange.p1, multiplierRange.p2);
+    mappedValue = Math.trunc(mappedValue);
+    multiplierLabel.innerHTML = String(mappedValue);
+
+    updateSetting("multiplier", mappedValue);
+});
+
 const colorize = document.querySelector("#colorize")! as HTMLInputElement;
 colorize.checked = Settings.colorize;
 colorize.addEventListener("click", () => { Settings.colorize = colorize.checked; });
@@ -101,6 +116,8 @@ export function updateSetting(id: string, content?: any)
             break;
         case "margin":
             Settings.aabbMargin = content!;
+        case "multiplier":
+            Settings.aabbMultiplier = content!;
         default:
             break;
     }

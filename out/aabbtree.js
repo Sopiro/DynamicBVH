@@ -1,47 +1,75 @@
-import { containsAABB, detectCollisionAABB, testPointInside, union, toAABB } from "./aabb.js";
+import { containsAABB, detectCollisionAABB, testPointInside, union } from "./aabb.js";
 import { Settings } from "./settings.js";
-import { make_pair_natural } from "./util.js";
+import { assert, make_pair_natural } from "./util.js";
 export class AABBTree {
     constructor() {
-        this.nodeID = 0;
+        this.uid = 0;
         this.root = undefined;
-    }
-    update() {
-        let invalidNodes = [];
-        this.traverse(node => {
-            if (node.isLeaf) {
-                let entity = node.entity;
-                let tightAABB = toAABB(entity, 0.0);
-                if (containsAABB(node.aabb, tightAABB)) {
-                    return;
-                }
-                invalidNodes.push(node);
-            }
-        });
-        // Re-insert the invalid nodes
-        for (let node of invalidNodes) {
-            this.remove(node);
-            this.add(node.entity);
-        }
     }
     reset() {
-        this.nodeID = 0;
+        this.uid = 0;
         this.root = undefined;
     }
-    add(entity) {
-        // Enlarged AABB
-        let aabb = toAABB(entity, Settings.aabbMargin);
+    createNode(entity, aabb) {
+        let enlargedAABB = aabb;
+        enlargedAABB.max.x += Settings.aabbMargin;
+        enlargedAABB.max.y += Settings.aabbMargin;
+        enlargedAABB.min.x -= Settings.aabbMargin;
+        enlargedAABB.min.y -= Settings.aabbMargin;
         let newNode = {
-            id: this.nodeID++,
-            aabb: aabb,
+            id: this.uid++,
+            aabb: enlargedAABB,
             isLeaf: true,
-            entity: entity
+            data: entity,
+            parent: undefined,
+            child1: undefined,
+            child2: undefined,
         };
-        entity.node = newNode;
-        if (this.root == undefined) {
-            this.root = newNode;
-            return newNode;
+        this.insertLeaf(newNode);
+        return newNode;
+    }
+    destoryNode(node) {
+        assert(node.isLeaf);
+        this.removeLeaf(node);
+    }
+    moveNode(node, newAABB, displacement, forceMove = false) {
+        assert(node.isLeaf);
+        let treeAABB = node.aabb;
+        if (containsAABB(treeAABB, newAABB) && forceMove == false) {
+            return false;
         }
+        let enlargedAABB = newAABB;
+        let d = displacement.mul(Settings.aabbMultiplier);
+        if (d.x > 0.0) {
+            enlargedAABB.max.x += d.x;
+        }
+        else {
+            enlargedAABB.min.x += d.x;
+        }
+        if (d.y > 0.0) {
+            enlargedAABB.max.y += d.y;
+        }
+        else {
+            enlargedAABB.min.y += d.y;
+        }
+        // Fatten the aabb
+        enlargedAABB.max.x += Settings.aabbMargin;
+        enlargedAABB.max.y += Settings.aabbMargin;
+        enlargedAABB.min.x -= Settings.aabbMargin;
+        enlargedAABB.min.y -= Settings.aabbMargin;
+        // Remove and re-insert
+        this.removeLeaf(node);
+        node.aabb = enlargedAABB;
+        this.insertLeaf(node);
+        return true;
+    }
+    insertLeaf(leaf) {
+        // Enlarged AABB
+        if (this.root == undefined) {
+            this.root = leaf;
+            return;
+        }
+        let aabb = leaf.aabb;
         // Find the best sibling for the new leaf
         let bestSibling = this.root;
         let bestCost = union(this.root.aabb, aabb).area;
@@ -69,7 +97,7 @@ export class AABBTree {
         // Create a new parent
         let oldParent = bestSibling.parent;
         let newParent = {
-            id: this.nodeID++,
+            id: this.uid++,
             parent: oldParent,
             aabb: union(aabb, bestSibling.aabb),
             isLeaf: false
@@ -82,19 +110,19 @@ export class AABBTree {
                 oldParent.child2 = newParent;
             }
             newParent.child1 = bestSibling;
-            newParent.child2 = newNode;
+            newParent.child2 = leaf;
             bestSibling.parent = newParent;
-            newNode.parent = newParent;
+            leaf.parent = newParent;
         }
         else {
             newParent.child1 = bestSibling;
-            newParent.child2 = newNode;
+            newParent.child2 = leaf;
             bestSibling.parent = newParent;
-            newNode.parent = newParent;
+            leaf.parent = newParent;
             this.root = newParent;
         }
         // Walk back up the tree refitting ancestors' AABB and applying rotations
-        let ancestor = newNode.parent;
+        let ancestor = leaf.parent;
         while (ancestor != undefined) {
             let child1 = ancestor.child1;
             let child2 = ancestor.child2;
@@ -104,7 +132,6 @@ export class AABBTree {
             }
             ancestor = ancestor.parent;
         }
-        return newNode;
     }
     rotate(node) {
         if (node.parent == undefined) {
@@ -208,11 +235,10 @@ export class AABBTree {
         }
         node1.parent = parent2;
     }
-    remove(node) {
-        let parent = node.parent;
-        node.entity.node = undefined;
+    removeLeaf(leaf) {
+        let parent = leaf.parent;
         if (parent != undefined) {
-            let sibling = parent.child1 == node ? parent.child2 : parent.child1;
+            let sibling = parent.child1 == leaf ? parent.child2 : parent.child1;
             if (parent.parent != undefined) {
                 sibling.parent = parent.parent;
                 if (parent.parent.child1 == parent) {
@@ -235,7 +261,7 @@ export class AABBTree {
             }
         }
         else {
-            if (this.root == node) {
+            if (this.root == leaf) {
                 this.root = undefined;
             }
         }
