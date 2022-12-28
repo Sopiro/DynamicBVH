@@ -1,4 +1,4 @@
-import { detectCollisionAABB, toAABB } from "./aabb.js";
+import { toAABB } from "./aabb.js";
 import { Box } from "./box.js";
 import { Entity } from "./entity.js";
 
@@ -9,7 +9,7 @@ export function detectCollision(e1: Entity, e2: Entity): boolean
         let aabb1 = toAABB(e1);
         let aabb2 = toAABB(e2);
 
-        if (detectCollisionAABB(aabb1, aabb2))
+        if (aabb1.testOverlap(aabb2))
         {
             return true
         }

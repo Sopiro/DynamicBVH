@@ -1,4 +1,4 @@
-import { AABB, containsAABB, detectCollisionAABB, testPointInside, union, toAABB } from "./aabb.js";
+import { AABB, union } from "./aabb.js";
 import { Vector2 } from "./math.js";
 import { Settings } from "./settings.js";
 import { assert, make_pair_natural, Pair } from "./util.js";
@@ -49,7 +49,7 @@ export class AABBTree
         return newNode;
     }
 
-    destoryNode(node: Node): void
+    destroyNode(node: Node): void
     {
         assert(node.isLeaf);
 
@@ -61,13 +61,13 @@ export class AABBTree
         assert(node.isLeaf);
 
         let treeAABB: AABB = node.aabb;
-        if (containsAABB(treeAABB, newAABB) && forceMove == false)
+        if (treeAABB.contains(newAABB) && forceMove == false)
         {
             return false;
         }
 
-        let enlargedAABB: AABB = newAABB;
-        let d: Vector2 = displacement.mul(Settings.aabbMultiplier);
+        let enlargedAABB = newAABB.copy();
+        let d = displacement.mul(Settings.aabbMultiplier);
 
         if (d.x > 0.0)
         {
@@ -407,7 +407,7 @@ export class AABBTree
         {
             let current = q.shift()!;
 
-            if (!testPointInside(current.aabb, point))
+            if (!current.aabb.testPoint(point))
             {
                 continue;
             }
@@ -441,7 +441,7 @@ export class AABBTree
         {
             let current = q.shift()!;
 
-            if (!detectCollisionAABB(current.aabb, region))
+            if (!current.aabb.testOverlap(region))
             {
                 continue;
             }
@@ -494,7 +494,7 @@ export class AABBTree
 
         if (a.isLeaf && b.isLeaf)
         {
-            if (detectCollisionAABB(a.aabb, b.aabb))
+            if (a.aabb.testOverlap(b.aabb))
             {
                 pairs.push({ p1: a, p2: b });
             }
@@ -504,7 +504,7 @@ export class AABBTree
             this.checkCollision(a.child1!, a.child2!, pairs, checked);
             this.checkCollision(b.child1!, b.child2!, pairs, checked);
 
-            if (detectCollisionAABB(a.aabb, b.aabb))
+            if (a.aabb.testOverlap(b.aabb))
             {
                 this.checkCollision(a.child1!, b.child1!, pairs, checked);
                 this.checkCollision(a.child1!, b.child2!, pairs, checked);
@@ -516,7 +516,7 @@ export class AABBTree
         {
             this.checkCollision(b.child1!, b.child2!, pairs, checked);
 
-            if (detectCollisionAABB(a.aabb, b.aabb))
+            if (a.aabb.testOverlap(b.aabb))
             {
                 this.checkCollision(a, b.child1!, pairs, checked);
                 this.checkCollision(a, b.child2!, pairs, checked);
@@ -526,7 +526,7 @@ export class AABBTree
         {
             this.checkCollision(a.child1!, a.child2!, pairs, checked);
 
-            if (detectCollisionAABB(a.aabb, b.aabb))
+            if (a.aabb.testOverlap(b.aabb))
             {
                 this.checkCollision(b, a.child1!, pairs, checked);
                 this.checkCollision(b, a.child2!, pairs, checked);

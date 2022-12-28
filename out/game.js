@@ -192,7 +192,7 @@ export class Game {
                 let res = this.tree.queryRegion(new AABB(this.clickStart, this.clickEnd));
                 this.entityCount -= res.length;
                 for (let n of res) {
-                    this.tree.destoryNode(n);
+                    this.tree.destroyNode(n);
                 }
                 this.removing = false;
                 this.updateCostLabel();
@@ -203,7 +203,7 @@ export class Game {
             let res = this.tree.queryPoint(mp);
             this.entityCount -= res.length;
             for (let n of res) {
-                this.tree.destoryNode(n);
+                this.tree.destroyNode(n);
             }
             this.updateCostLabel();
         }

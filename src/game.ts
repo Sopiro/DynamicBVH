@@ -298,7 +298,7 @@ export class Game
                 this.entityCount -= res.length;
                 for (let n of res)
                 {
-                    this.tree.destoryNode(n);
+                    this.tree.destroyNode(n);
                 }
 
                 this.removing = false;
@@ -315,7 +315,7 @@ export class Game
 
             for (let n of res)
             {
-                this.tree.destoryNode(n);
+                this.tree.destroyNode(n);
             }
             this.updateCostLabel();
         }

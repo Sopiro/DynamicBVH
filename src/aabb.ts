@@ -15,6 +15,35 @@ export class AABB
         fix(this);
     }
 
+    copy(): AABB
+    {
+        return new AABB(this.min, this.max)
+    }
+
+    contains(other: AABB): boolean
+    {
+        return this.min.x <= other.min.x
+            && this.min.y <= other.min.y
+            && this.max.x >= other.max.x
+            && this.max.y >= other.max.y
+    }
+
+    testPoint(point: Vector2): boolean
+    {
+        if (this.min.x > point.x || this.max.x < point.x) return false;
+        if (this.min.y > point.y || this.max.y < point.y) return false;
+
+        return true;
+    }
+
+    testOverlap(other: AABB): boolean
+    {
+        if (this.min.x > other.max.x || this.max.x < other.min.x) return false;
+        if (this.min.y > other.max.y || this.max.y < other.min.y) return false;
+
+        return true;
+    }
+
     get area(): number
     {
         return (this.max.x - this.min.x) * (this.max.y - this.min.y);
@@ -49,30 +78,6 @@ export function union(b1: AABB, b2: AABB): AABB
     let res = new AABB(new Vector2(minX, minY), new Vector2(maxX, maxY));
 
     return res;
-}
-
-export function testPointInside(aabb: AABB, point: Vector2): boolean
-{
-    if (aabb.min.x > point.x || aabb.max.x < point.x) return false;
-    if (aabb.min.y > point.y || aabb.max.y < point.y) return false;
-
-    return true;
-}
-
-export function detectCollisionAABB(a: AABB, b: AABB): boolean
-{
-    if (a.min.x > b.max.x || a.max.x < b.min.x) return false;
-    if (a.min.y > b.max.y || a.max.y < b.min.y) return false;
-
-    return true;
-}
-
-export function containsAABB(container: AABB, target: AABB): boolean
-{
-    return container.min.x <= target.min.x
-        && container.min.y <= target.min.y
-        && container.max.x >= target.max.x
-        && container.max.y >= target.max.y
 }
 
 export function toAABB(entity: Entity, margin: number = 0.0): AABB
