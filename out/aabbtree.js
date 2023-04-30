@@ -357,11 +357,11 @@ export class AABBTree {
             }
         }
     }
-    // BFS tree traversal
+    // DFS tree traversal
     traverse(callback) {
         let q = [this.root];
         while (q.length != 0) {
-            let current = q.shift();
+            let current = q.pop();
             if (current == undefined) {
                 break;
             }
