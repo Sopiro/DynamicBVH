@@ -28,10 +28,11 @@ export const Settings = {
     paused: false,
     boxCount: 15,
     genSpeed: 50,
-    aabbMargin: 0.1,
-    aabbMultiplier: 4.0,
     colorize: true,
     applyRotation: true,
+    // These two options are actually tree member variables..
+    aabbMargin: 0.1,
+    aabbMultiplier: 4.0,
 }
 
 // Remove the default pop-up context menu

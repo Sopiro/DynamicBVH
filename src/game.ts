@@ -29,7 +29,7 @@ export class Game
 
     private tree: AABBTree;
 
-    private initRoutines: NodeJS.Timer[] = [];
+    private initRoutines: NodeJS.Timeout[] = [];
     private creating: boolean = false;
     private grabbing: boolean = false;
     private removing: boolean = false;
@@ -84,7 +84,7 @@ export class Game
         this.tree.reset();
 
         for (let r of this.initRoutines)
-            clearInterval(r);
+            clearInterval(r)
 
         // Random initial spread
         let seedString = this.seedTextBox.value;
