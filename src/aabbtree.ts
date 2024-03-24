@@ -106,7 +106,6 @@ export class AABBTree
 
     private insertLeaf(leaf: Node): void
     {
-        // Enlarged AABB
         if (this.root == undefined)
         {
             this.root = leaf;
@@ -159,6 +158,11 @@ export class AABBTree
             isLeaf: false
         }
 
+        newParent.child1 = bestSibling;
+        newParent.child2 = leaf;
+        bestSibling.parent = newParent;
+        leaf.parent = newParent;
+
         if (oldParent != undefined)
         {
             if (oldParent.child1 == bestSibling)
@@ -168,23 +172,13 @@ export class AABBTree
             {
                 oldParent.child2 = newParent;
             }
-
-            newParent.child1 = bestSibling;
-            newParent.child2 = leaf;
-            bestSibling.parent = newParent;
-            leaf.parent = newParent;
         } else
         {
-            newParent.child1 = bestSibling;
-            newParent.child2 = leaf;
-            bestSibling.parent = newParent;
-            leaf.parent = newParent;
             this.root = newParent;
         }
 
         // Walk back up the tree refitting ancestors' AABB and applying rotations
-        let ancestor: Node | undefined = leaf.parent;
-
+        let ancestor: Node | undefined = newParent;
         while (ancestor != undefined)
         {
             let child1 = ancestor.child1!;
@@ -203,29 +197,32 @@ export class AABBTree
 
     private rotate(node: Node): void
     {
-        if (node.parent == undefined) 
+        if (node.isLeaf) 
         {
             return;
         }
 
-        let parent = node.parent;
-        let sibling = parent.child1 == node ? parent.child2! : parent.child1!;
+        let child1 = node.child1!;
+        let child2 = node.child2!;
 
-        let costDiffs: number[] = [];
-        let nodeArea = node.aabb.area;
+        let costDiffs: number[] = [0, 0, 0, 0];
 
-        costDiffs.push(union(sibling.aabb, node.child1!.aabb).area - nodeArea);
-        costDiffs.push(union(sibling.aabb, node.child2!.aabb).area - nodeArea);
-
-        if (!sibling.isLeaf)
+        if (child1.isLeaf == false)
         {
-            let siblingArea = sibling.aabb.area;
-            costDiffs.push(union(node.aabb, sibling.child1!.aabb).area - siblingArea);
-            costDiffs.push(union(node.aabb, sibling.child2!.aabb).area - siblingArea);
+            let area1 = child1.aabb.area;
+            costDiffs[0] = union(child1.child1!.aabb, child2.aabb).area - area1;
+            costDiffs[1] = union(child1.child2!.aabb, child2.aabb).area - area1;
+        }
+
+        if (child2.isLeaf == false)
+        {
+            let area2 = child2.aabb.area;
+            costDiffs[2] = union(child2.child1!.aabb, child1.aabb).area - area2;
+            costDiffs[3] = union(child2.child2!.aabb, child1.aabb).area - area2;
         }
 
         let bestDiffIndex = 0;
-        for (let i = 1; i < costDiffs.length; i++)
+        for (let i = 1; i < 4; i++)
         {
             if (costDiffs[i] < costDiffs[bestDiffIndex])
             {
@@ -233,84 +230,55 @@ export class AABBTree
             }
         }
 
-        if (costDiffs[bestDiffIndex] < 0.0)
+        // Rotate only if it reduce the suface area
+        if (costDiffs[bestDiffIndex] >= 0)
         {
-            console.log("Tree rotation: type " + bestDiffIndex);
-            switch (bestDiffIndex)
-            {
-                case 0:
-                    // this.swap(sibling, node.child2!);
+            return;
+        }
 
-                    if (parent.child1 == sibling)
-                    {
-                        parent.child1 = node.child2;
-                    }
-                    else
-                    {
-                        parent.child2 = node.child2;
-                    }
+        console.log("Tree rotation: type " + bestDiffIndex);
+        switch (bestDiffIndex)
+        {
+            case 0:
+                // this.swap(child2, child1.child2!);
+                child1.child2!.parent = node;
+                node.child2 = child1.child2!;
 
-                    node.child2!.parent = parent;
+                child1.child2 = child2;
+                child2.parent = child1;
 
-                    node.child2 = sibling;
-                    sibling.parent = node;
-                    node.aabb = union(sibling.aabb, node.child1!.aabb);
-                    break;
-                case 1:
-                    // this.swap(sibling, node.child1!);
+                child1.aabb = union(child1.child1!.aabb, child1.child2!.aabb);
+                break;
+            case 1:
+                // this.swap(child2, child1.child1!);
+                child1.child1!.parent = node;
+                node.child2 = child1.child1;
 
-                    if (parent.child1 == sibling)
-                    {
-                        parent.child1 = node.child1;
-                    }
-                    else
-                    {
-                        parent.child2 = node.child1;
-                    }
+                child1.child1 = child2;
+                child2.parent = child1;
 
-                    node.child1!.parent = parent;
+                child1.aabb = union(child1.child1!.aabb, child1.child2!.aabb);
+                break;
+            case 2:
+                // this.swap(child1, child2.child2!);
+                child2.child2!.parent = node;
+                node.child1 = child2.child2;
 
-                    node.child1 = sibling;
-                    sibling.parent = node;
-                    node.aabb = union(sibling.aabb, node.child2!.aabb);
-                    break;
-                case 2:
-                    // this.swap(node, sibling.child2!);
+                child2.child2 = child1;
+                child1.parent = child2;
 
-                    if (parent.child1 == node)
-                    {
-                        parent.child1 = sibling.child2;
-                    }
-                    else
-                    {
-                        parent.child2 = sibling.child2;
-                    }
+                child2.aabb = union(child2.child1!.aabb, child2.child2!.aabb);
+                break;
+            case 3:
+                // this.swap(child1, child2.child1!);
+                child2.child1!.parent = node;
+                node.child1 = child2.child1;
 
-                    sibling.child2!.parent = parent;
+                child2.child1 = child1;
+                child1.parent = child2;
 
-                    sibling.child2 = node;
-                    node.parent = sibling;
-                    sibling.aabb = union(node.aabb, sibling.child2!.aabb);
-                    break;
-                case 3:
-                    // this.swap(node, sibling.child1!);
-
-                    if (parent.child1 == node)
-                    {
-                        parent.child1 = sibling.child1;
-                    }
-                    else
-                    {
-                        parent.child2 = sibling.child1;
-                    }
-
-                    sibling.child1!.parent = parent;
-
-                    sibling.child1 = node;
-                    node.parent = sibling;
-                    sibling.aabb = union(node.aabb, sibling.child1!.aabb);
-                    break;
-            }
+                child2.aabb = union(child2.child1!.aabb, child2.child2!.aabb);
+                break;
         }
     }
 
@@ -351,44 +319,47 @@ export class AABBTree
     {
         let parent = leaf.parent;
 
-        if (parent != undefined)
+        // node is root
+        if (parent == undefined)
         {
-            let sibling = parent.child1 == leaf ? parent.child2! : parent.child1!;
+            assert(this.root == leaf);
+            this.root = undefined;
+            return;
+        }
 
-            if (parent.parent != undefined)
+        let grandParent = parent.parent;
+        let sibling = parent.child1 == leaf ? parent.child2! : parent.child1!;
+
+        // node has grandparent
+        if (grandParent != undefined)
+        {
+            sibling.parent = grandParent;
+            if (grandParent.child1 == parent)
             {
-                sibling.parent = parent.parent;
-                if (parent.parent.child1 == parent)
-                {
-                    parent.parent.child1 = sibling;
-                }
-                else
-                {
-                    parent.parent.child2 = sibling;
-                }
+                grandParent.child1 = sibling;
             }
             else
             {
-                this.root = sibling;
-                sibling.parent = undefined;
+                grandParent.child2 = sibling;
             }
 
-            let ancestor = sibling.parent;
+            let ancestor: Node | undefined = grandParent;
             while (ancestor != undefined)
             {
                 let child1 = ancestor.child1!;
                 let child2 = ancestor.child2!;
 
                 ancestor.aabb = union(child1.aabb, child2.aabb);
+
+                this.rotate(ancestor);
+
                 ancestor = ancestor.parent;
             }
-
-        } else
+        }
+        else
         {
-            if (this.root == leaf)
-            {
-                this.root = undefined;
-            }
+            this.root = sibling;
+            sibling.parent = undefined;
         }
     }
 
