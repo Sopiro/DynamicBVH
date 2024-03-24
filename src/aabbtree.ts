@@ -195,6 +195,54 @@ export class AABBTree
         }
     }
 
+    private removeLeaf(leaf: Node): void
+    {
+        let parent = leaf.parent;
+
+        // node is root
+        if (parent == undefined)
+        {
+            assert(this.root == leaf);
+            this.root = undefined;
+            return;
+        }
+
+        let grandParent = parent.parent;
+        let sibling = parent.child1 == leaf ? parent.child2! : parent.child1!;
+
+        // node has grandparent
+        if (grandParent != undefined)
+        {
+            sibling.parent = grandParent;
+            if (grandParent.child1 == parent)
+            {
+                grandParent.child1 = sibling;
+            }
+            else
+            {
+                grandParent.child2 = sibling;
+            }
+
+            let ancestor: Node | undefined = grandParent;
+            while (ancestor != undefined)
+            {
+                let child1 = ancestor.child1!;
+                let child2 = ancestor.child2!;
+
+                ancestor.aabb = union(child1.aabb, child2.aabb);
+
+                this.rotate(ancestor);
+
+                ancestor = ancestor.parent;
+            }
+        }
+        else
+        {
+            this.root = sibling;
+            sibling.parent = undefined;
+        }
+    }
+
     private rotate(node: Node): void
     {
         if (node.isLeaf) 
@@ -313,54 +361,6 @@ export class AABBTree
             parent2.child2 = node1;
         }
         node1.parent = parent2;
-    }
-
-    private removeLeaf(leaf: Node): void
-    {
-        let parent = leaf.parent;
-
-        // node is root
-        if (parent == undefined)
-        {
-            assert(this.root == leaf);
-            this.root = undefined;
-            return;
-        }
-
-        let grandParent = parent.parent;
-        let sibling = parent.child1 == leaf ? parent.child2! : parent.child1!;
-
-        // node has grandparent
-        if (grandParent != undefined)
-        {
-            sibling.parent = grandParent;
-            if (grandParent.child1 == parent)
-            {
-                grandParent.child1 = sibling;
-            }
-            else
-            {
-                grandParent.child2 = sibling;
-            }
-
-            let ancestor: Node | undefined = grandParent;
-            while (ancestor != undefined)
-            {
-                let child1 = ancestor.child1!;
-                let child2 = ancestor.child2!;
-
-                ancestor.aabb = union(child1.aabb, child2.aabb);
-
-                this.rotate(ancestor);
-
-                ancestor = ancestor.parent;
-            }
-        }
-        else
-        {
-            this.root = sibling;
-            sibling.parent = undefined;
-        }
     }
 
     queryPoint(point: Vector2): Node[]
