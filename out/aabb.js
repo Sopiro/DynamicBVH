@@ -32,6 +32,9 @@ export class AABB {
     get area() {
         return (this.max.x - this.min.x) * (this.max.y - this.min.y);
     }
+    get perimeter() {
+        return 2 * ((this.max.x - this.min.x) + (this.max.y - this.min.y));
+    }
 }
 export function fix(aabb) {
     let minX = Math.min(aabb.min.x, aabb.max.x);

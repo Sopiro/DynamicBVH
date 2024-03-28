@@ -323,7 +323,7 @@ export class Game
 
     private updateCostLabel(): void
     {
-        this.surfaceAreaLabel.innerHTML = "Tree surface area: " + this.tree.cost.toFixed(2);
+        this.surfaceAreaLabel.innerHTML = "Tree cost: " + this.tree.cost.toFixed(2);
     }
 
     render(r: Renderer): void

@@ -48,6 +48,11 @@ export class AABB
     {
         return (this.max.x - this.min.x) * (this.max.y - this.min.y);
     }
+
+    get perimeter(): number
+    {
+        return 2 * ((this.max.x - this.min.x) + (this.max.y - this.min.y));
+    }
 }
 
 export function fix(aabb: AABB): void
