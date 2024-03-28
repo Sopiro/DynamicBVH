@@ -209,7 +209,7 @@ export class Game {
         }
     }
     updateCostLabel() {
-        this.surfaceAreaLabel.innerHTML = "Tree surface area: " + this.tree.cost.toFixed(2);
+        this.surfaceAreaLabel.innerHTML = "Tree cost: " + this.tree.cost.toFixed(2);
     }
     render(r) {
         r.setCameraTransform(this.camera.cameraTransform);

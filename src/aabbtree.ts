@@ -1,4 +1,5 @@
 import { AABB, union } from "./aabb.js";
+import { Heap } from "./heap.js";
 import { Vector2 } from "./math.js";
 import { Settings } from "./settings.js";
 import { assert, make_pair_natural, Pair } from "./util.js";
@@ -116,17 +117,23 @@ export class AABBTree
 
         // Find the best sibling for the new leaf
         let bestSibling = this.root;
-        let bestCost = union(this.root.aabb, aabb).area;
-        let q: Pair<Node, number>[] = [{ p1: this.root, p2: 0.0 }];
+        let bestCost = union(this.root.aabb, aabb).perimeter;
 
-        while (q.length != 0)
+        // let q: Pair<Node, number>[] = [];
+
+        // Using priority queue
+        let q = new Heap<Pair<Node, number>>([], (a, b) => { return a.p2 < b.p2 });
+
+        q.push({ p1: this.root, p2: 0.0 });
+
+        while (q.length > 0)
         {
-            let front: Pair<Node, number> = q.shift()!;
+            let front = q.pop()!;
             let current = front.p1;
             let inheritedCost = front.p2;
 
             let combined = union(current.aabb, aabb);
-            let directCost = combined.area;
+            let directCost = combined.perimeter;
 
             let costForCurrent = directCost + inheritedCost;
             if (costForCurrent < bestCost)
@@ -135,9 +142,9 @@ export class AABBTree
                 bestSibling = current;
             }
 
-            inheritedCost += directCost - current.aabb.area;
+            inheritedCost += directCost - current.aabb.perimeter;
 
-            let lowerBoundCost = aabb.area + inheritedCost;
+            let lowerBoundCost = aabb.perimeter + inheritedCost;
             if (lowerBoundCost < bestCost)
             {
                 if (!current.isLeaf)
@@ -257,16 +264,16 @@ export class AABBTree
 
         if (child1.isLeaf == false)
         {
-            let area1 = child1.aabb.area;
-            costDiffs[0] = union(child1.child1!.aabb, child2.aabb).area - area1;
-            costDiffs[1] = union(child1.child2!.aabb, child2.aabb).area - area1;
+            let area1 = child1.aabb.perimeter;
+            costDiffs[0] = union(child1.child1!.aabb, child2.aabb).perimeter - area1;
+            costDiffs[1] = union(child1.child2!.aabb, child2.aabb).perimeter - area1;
         }
 
         if (child2.isLeaf == false)
         {
-            let area2 = child2.aabb.area;
-            costDiffs[2] = union(child2.child1!.aabb, child1.aabb).area - area2;
-            costDiffs[3] = union(child2.child2!.aabb, child1.aabb).area - area2;
+            let area2 = child2.aabb.perimeter;
+            costDiffs[2] = union(child2.child1!.aabb, child1.aabb).perimeter - area2;
+            costDiffs[3] = union(child2.child2!.aabb, child1.aabb).perimeter - area2;
         }
 
         let bestDiffIndex = 0;
@@ -406,11 +413,11 @@ export class AABBTree
             return res;
         }
 
-        let q = [this.root];
+        let stack = [this.root];
 
-        while (q.length != 0)
+        while (stack.length != 0)
         {
-            let current = q.shift()!;
+            let current = stack.pop()!;
 
             if (!current.aabb.testOverlap(region))
             {
@@ -423,8 +430,8 @@ export class AABBTree
             }
             else
             {
-                q.push(current.child1!);
-                q.push(current.child2!);
+                stack.push(current.child1!);
+                stack.push(current.child2!);
             }
         }
 
@@ -534,7 +541,7 @@ export class AABBTree
 
         this.traverse(node =>
         {
-            cost += node.aabb.area;
+            cost += node.aabb.perimeter;
         });
 
         return cost;
