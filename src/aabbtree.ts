@@ -68,7 +68,7 @@ export class AABBTree
         }
 
         let enlargedAABB = newAABB.copy();
-        let d = displacement.mul(Settings.aabbMultiplier);
+        let d = displacement.mul(Settings.velocityMultiplier);
 
         if (d.x > 0.0)
         {

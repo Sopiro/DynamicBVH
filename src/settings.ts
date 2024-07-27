@@ -32,7 +32,7 @@ export const Settings = {
     applyRotation: true,
     // These two options are actually tree member variables..
     aabbMargin: 0.1,
-    aabbMultiplier: 4.0,
+    velocityMultiplier: 3.0,
 }
 
 // Remove the default pop-up context menu
@@ -82,9 +82,9 @@ margin.addEventListener("input", () =>
 });
 
 const multiplier = document.querySelector("#multiplier")! as HTMLInputElement;
-multiplier.value = String(Util.map(Settings.aabbMultiplier, multiplierRange.p1, multiplierRange.p2, 0, 100));
+multiplier.value = String(Util.map(Settings.velocityMultiplier, multiplierRange.p1, multiplierRange.p2, 0, 100));
 const multiplierLabel = document.querySelector("#multiplier_label")! as HTMLLabelElement;
-multiplierLabel.innerHTML = String(Settings.aabbMultiplier);
+multiplierLabel.innerHTML = String(Settings.velocityMultiplier);
 multiplier.addEventListener("input", () =>
 {
     let mappedValue = Util.map(Number(multiplier.value), 0, 100, multiplierRange.p1, multiplierRange.p2);
@@ -118,7 +118,7 @@ export function updateSetting(id: string, content?: any)
         case "margin":
             Settings.aabbMargin = content!;
         case "multiplier":
-            Settings.aabbMultiplier = content!;
+            Settings.velocityMultiplier = content!;
         default:
             break;
     }

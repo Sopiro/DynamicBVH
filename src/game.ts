@@ -156,9 +156,9 @@ export class Game
         let bvh = nSquared / debugCount;
 
         this.efficiencyCheckLabel.innerHTML = "Box count: " + this.entityCount + "<br>"
-            + "BruteForce: " + nSquared + "<br>"
-            + "Dynamic BVH: " + debugCount + "<br>"
-            + "Dynamic BVH is " + (isNaN(bvh) ? "0" : bvh.toFixed(2)) + " times more efficient";
+            + "- BruteForce: " + nSquared + "<br>"
+            + "- Dynamic BVH: " + debugCount + "<br>"
+            + "Dynamic BVH is " + (isNaN(bvh) ? "0" : bvh.toFixed(2)) + "\n times more efficient";
     }
 
     private handleInput(delta: number): void

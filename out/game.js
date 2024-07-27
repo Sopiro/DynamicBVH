@@ -98,9 +98,9 @@ export class Game {
         let nSquared = (this.entityCount * this.entityCount - this.entityCount) / 2.0;
         let bvh = nSquared / debugCount;
         this.efficiencyCheckLabel.innerHTML = "Box count: " + this.entityCount + "<br>"
-            + "BruteForce: " + nSquared + "<br>"
-            + "Dynamic BVH: " + debugCount + "<br>"
-            + "Dynamic BVH is " + (isNaN(bvh) ? "0" : bvh.toFixed(2)) + " times more efficient";
+            + "- BruteForce: " + nSquared + "<br>"
+            + "- Dynamic BVH: " + debugCount + "<br>"
+            + "Dynamic BVH is " + (isNaN(bvh) ? "0" : bvh.toFixed(2)) + "\n times more efficient";
     }
     handleInput(delta) {
         const mx = Input.isKeyDown("ArrowLeft") ? -1 : Input.isKeyDown("ArrowRight") ? 1 : 0;
